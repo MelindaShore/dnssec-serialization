@@ -58,7 +58,10 @@
       The intent of this
       proposal is to reduce network round-trips and
       setup latency when establishing a TLS connection to a
-      DNSSEC-protected domain name.</t>
+      DNSSEC-protected domain name, and also to workaround
+      potential problems TLS clients may encounter receiving
+      DNSSEC signed responses because of interference by 
+      middleboxes.</t>
     </abstract>
 </front>
 
@@ -328,6 +331,14 @@
       also maintains a stack of zones.  Each zone has a name
       and a set of trusted keys for that zone.</t>
 
+    <t>
+      [We probably need a paragraph or two here (or a new section)
+      that talks about trust anchor rollover. The TLS client should 
+      probably use something like RFC5011 to periodically track the DNS 
+      root key and automatically update it, if/when a root key rollover
+      takes place. All DNSSEC validators should be doing this -- Shumon]
+    </t>
+
     <section title="The INITIAL State">
       <t>   In the "INITIAL" state the verifier reads the
         following:</t>
@@ -456,15 +467,34 @@
       domain in the public DNS, and that this would be
       constructed by the TLS server.</t>
 
-    <t>The domain being queried SHOULD be that included in
+    <t>The domain name being queried SHOULD be that included in
       the Server Name Indication extension
-      <xref target="rfc4366" />, when present.</t>
+      <xref target="rfc4366" />, when present, assuming that
+      the server recognizes the server name.</t>
 
     <t>First, make a request for a "CNAME" record at the
       domain.  If a "CNAME" record exists, then it is the
       terminal record.  Otherwise resolve a record of a
       desired type at the domain.  If neither record exists,
       fail.</t>
+
+    <t>[Discussion: what is meant by "desired type" in the above
+      paragraph?
+
+      I think there are 2 main possibilities for the domain name
+      to query, depending on what the goal is: (1) for DANE 
+      authentication, a TLSA record corresponding to the name in 
+      the SNI extension, eg. for an HTTPS server on port 443, with 
+      an SNI extension of "www.example.com", we query 
+      "_443._tcp.www.example.com", type "TLSA". (2) for DNSSEC 
+      authentication of the name to IP mapping, we would query an A 
+      or AAAA record at the supplied server name (but does the TLS
+      server have easy access to the IP version info?). There is a
+      compelling need for DANE authentication. It's not clear to me
+      there is compelling need for name->IP mapping authentication, 
+      so perhaps we could pick only the DANE authentication use case. 
+      -- Shumon]
+    </t>
 
     <t>Now find the chain of zone names leading to that
       domain.  The parent zone of a domain is typically
@@ -473,6 +503,10 @@
       zone cut itself.  In the event that a domain has an
       SOA record, then simply remove the left-most label
       from the name and try again.</t>
+
+    <t>[The description above is not quite correct. I'll reword this
+       to be more precise -- Shumon]
+    </t>
 
     <t>Construct an array of zone records, one for each zone
       leading to the domain name, including the root zone.
@@ -522,6 +556,21 @@
   </section> <!-- construction -->
 
 
+  <section title="Caching and Regeneration of the Validation Chain">
+    <t>
+      DNS records have Time To Live (TTL) parameters, and DNSSEC
+      signatures have validity periods (specifically signature expiration
+      times). After the TLS server constructs the serialized validation
+      chain, it can cache and reuse it in multiple TLS connection
+      handshakes. However, it should keep track of the TTLs and signature
+      validity periods and requery the records and rebuild the validation
+      chain as needed. A server implementation could carefully track
+      these parameters and requery the chain correspondingly. Alternatively, 
+      it could be configured to rebuild the chain at some predefined periodic
+      intervals.
+    </t>
+  </section>
+
   <section title="Security Considerations">
     <t>Security considerations covered in <xref
        target="RFC6066" /> apply here, as well.</t>
@@ -540,6 +589,12 @@
   </section>
 
   <section title="Test Vectors">
+
+    <t>
+      [** The following section should be replaced with an example
+      that involves an existing (stable) TLSA record. Maybe I can 
+      set one up in the verisignlabs.com zone -- Shumon]
+    </t>
 
     <t>The following serialization involves assumes the the
       initial zone is the root and that the initial key is
