@@ -30,7 +30,7 @@
 
 <front>
   <title abbrev="TLS DNSSEC Chain Extension">
-    A DNSSEC and DANE Certificate Chain Extension for TLS
+    A DNSSEC and DANE Record Validation Chain Extension for TLS
   </title>
   <author fullname="Melinda Shore" initials="M"
           surname="Shore">
@@ -68,7 +68,7 @@
       The intent of this
       proposal is to reduce network round-trips and
       setup latency when establishing a TLS connection to a
-      DNSSEC-protected domain name, to workaround potential 
+      DNSSEC-protected domain name, to work around potential 
       problems TLS clients may encounter receiving DNSSEC 
       signed responses because of interference by middleboxes,
       and to more easily allow TLS client applications to validate
@@ -95,7 +95,7 @@
       establish the authenticity of that record. The intent of this
       proposal is to reduce network round-trips and
       setup latency when establishing a TLS connection to a
-      DNSSEC-protected domain name, to workaround potential
+      DNSSEC-protected domain name, to work around potential
       problems TLS clients may encounter receiving DNSSEC
       signed responses because of interference by middleboxes,
       and to more easily allow TLS client applications to validate
@@ -489,7 +489,7 @@
       constructed by the TLS server.</t>
 
     <t>When the goal is to perform DANE authentication 
-       <xref target="rfc6698" /> of the 
+       <xref target="RFC6698" /> of the 
        server's X.509 certificate, the DNS record to be
        serialized is a TLSA record corresponding to the 
        server's domain name.
@@ -497,7 +497,7 @@
 
     <t>The domain name of the server SHOULD be that included in
     the TLS Server Name Indication extension
-    <xref target="rfc4366" /> when present. If the Server Name 
+    <xref target="RFC4366" /> when present. If the Server Name 
     Indication extension is not present, or if the server does not 
     recognize the provided name and wishes to proceed with the handshake 
     rather than aborting the connection, the server uses the
@@ -510,7 +510,7 @@
     <t>
       The TLSA record to be queried is constructed by prepending
       the _port and _transport labels to the domain name as described
-      in <xref target="rfc6698" />, where port is the port number
+      in <xref target="RFC6698" />, where port is the port number
       associated with the TLS server, and transport is usually "tcp"
       for TLS servers. [Question: does this specification permit use
       by DTLS servers too?]
