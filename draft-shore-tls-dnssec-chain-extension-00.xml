@@ -114,6 +114,18 @@
     </t>
 
     <t>
+      Application adoption advice: this mechanism is useful for
+      TLS applications that need to address the problems described 
+      above. It may not be relevant for many other applications. For
+      example, SMTP MTAs are usually located in data centers and not
+      behind broken middleboxes, they can tolerate extra DNS lookup
+      latency, and are on servers where it is easier to provision
+      a validating resolver. Hence <xref target="DANESMTP">DANE 
+      authentication of SMTP MTAs</xref> is not likely to make use 
+      of this mechanism.
+    </t>
+
+    <t>
       The extension described here allows a TLS client to
       request in the client hello message that the DNS validation 
       chain be returned in the (extended) server hello message.
@@ -348,8 +360,9 @@ like the validation_chain function in getdns]
       a DNSSEC validation chain extension from a server, SHOULD use this
       information to perform DANE authentication of the server certificate.
       In order to do this, it provides the chain and its configured trust
-      anchor to a DNSSEC validation engine, which performs validation 
-      according to the <xref target="RFC4035">DNSSEC protocol</xref>.
+      anchor to a DNSSEC validation engine or library, which performs 
+      validation according to the 
+      <xref target="RFC4035">DNSSEC protocol</xref>.
       If the record is correctly authenticated, it then performs DANE
       authentication according to the 
       <xref target="RFC6698">DANE TLS protocol</xref>.
@@ -447,6 +460,14 @@ like the validation_chain function in getdns]
         <author fullname="Adam Langley" initials="A"
                 surname="Langley" />
         <organization>Google, Inc</organization>
+      </front>
+    </reference>
+    <reference anchor="DANESMTP"
+      target="https://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-19">
+      <front>
+        <title>SMTP Security via opportunistic DANE TLS</title>
+        <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
+        <author fullname="Wes Hardaker" initials="W" surname="Hardaker" />
       </front>
     </reference>
     &rfc1035;
