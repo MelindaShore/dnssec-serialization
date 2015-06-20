@@ -51,7 +51,7 @@
 
   <author fullname="Shumon Huque" initials="S"
           surname="Huque">
-    <organization>Verisign Inc.</organization>
+    <organization>Verisign Labs</organization>
     <address>
       <email>shuque@verisign.com</email>
     </address>
@@ -61,19 +61,19 @@
   <area>Security</area>
   <workgroup>TLS</workgroup>
   <abstract>
-    <t>This draft proposes and describes a TLS v1.2
+    <t>
+      This draft describes a new TLS v1.2
       extension for transport of a DNS record serialized
-      with all the DNSSEC signatures needed to strongly
-      establish the authenticity of that record.
-      The intent of this
-      proposal is to reduce network round-trips and
-      setup latency when establishing a TLS connection to a
-      DNSSEC-protected domain name, to work around potential 
-      problems TLS clients may encounter receiving DNSSEC 
-      signed responses because of interference by middleboxes,
-      and to more easily allow TLS client applications to validate
-      DNSSEC signed responses.</t>
-    </abstract>
+      with all the DNSSEC signatures needed to authenticate
+      that record.
+      The intent of this proposal is to allow TLS clients to
+      perform DANE authentication of a TLS server without needing to
+      perform additional DNS record lookups. It also avoids potential
+      problems with TLS clients being unable to lookup DANE records
+      because of an interfering middlebox. And lastly, it allows TLS
+      clients to more easily validate DANE records.
+    </t>
+  </abstract>
 </front>
 
 <middle>
