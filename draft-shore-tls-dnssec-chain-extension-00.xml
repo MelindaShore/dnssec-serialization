@@ -87,31 +87,50 @@
 
 
   <section title="Introduction">
-    <t>This draft proposes and describes
-      a <xref target="RFC5246">
-        TLS v1.2</xref>
-      extension for transport of a DNS record serialized
-      with all of the DNSSEC signatures needed to strongly
-      establish the authenticity of that record. The intent of this
-      proposal is to reduce network round-trips and
-      setup latency when establishing a TLS connection to a
-      DNSSEC-protected domain name, to work around potential
-      problems TLS clients may encounter receiving DNSSEC
-      signed responses because of interference by middleboxes,
-      and to more easily allow TLS client applications to validate
-      DNSSEC signed responses.</t>
+    <t>
+      This draft describes
+      a new <xref target="RFC5246">TLS v1.2</xref>
+      <xref target="RFC6066">extension</xref>
+      for transport of a DNS record serialized
+      with all of the DNSSEC signatures needed to authenticate
+      that record. 
+      The intent of this proposal is to allow TLS clients to 
+      perform DANE authentication of a TLS server without needing to
+      perform additional DNS record lookups and incurring the
+      associated latency penalty. It also avoids potential 
+      problems with TLS clients being unable to lookup DANE records
+      because of an interfering or broken middlebox. Ideally 
+      misbehaving middleboxes should be repaired but as a practical
+      matter it is not possible to do so at the scale of today's
+      Internet in a reasonable amount of time, so a solution to
+      workaround this problem is needed for clients that are stuck
+      behind them. And lastly, it allows a TLS client to more easily 
+      validate DANE records itself without needing access to
+      a validating DNS resolver to which it has a secure connection.
+    </t>
 
-    <t>The extension described here allows a TLS client to
-      request in the client hello that the validation chain
-      be returned in the (extended) server hello.</t>
+    <t>
+      The extension described here allows a TLS client to
+      request in the client hello message that the DNS validation 
+      chain be returned in the (extended) server hello message.
+    </t>
 
-    <t>This specification builds on Adam Langley's <xref target="AGL">proposal
-        for serializing DNSSEC validation chains</xref>,
-        and incorporates text, data structures, and
-        procedures directly from that document. [NOTE: we
-        should check with Adam about adding him as an
-        author, since he's primarily responsible for the
-        content of this draft]</t>
+    <t>
+      This specification builds on Adam Langley's <xref target="AGL">
+      earlier proposal for serializing DNSSEC validation chains</xref>,
+      from which it incorporates some ideas and text. It modifies the
+      approach by using a sequence of DNS records in uncompressed
+      DNS wire format instead of a custom serialization format. It 
+      also refers more extensively to official DNSSEC protocol documents
+      for descriptions of how to perform DNSSEC validation rather than
+      describing a validation algorithm in the document, which runs the
+      risk of diverging later from the official DNSSEC protocol
+      specifications. This new approach makes it easier for implementers
+      to use DNS specific libraries to implement these functions, and
+      greatly reduces the possibility of implementation errors. An
+      appendix to be provided in a later revision of this document will
+      include sample code to show one way to do this.
+    </t>
 
   </section> <!-- introduction -->
 
