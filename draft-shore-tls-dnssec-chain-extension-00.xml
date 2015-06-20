@@ -451,25 +451,8 @@ like the validation_chain function in getdns]
 </middle>
 
 <back>
+
   <references title="Normative References">
-    <reference anchor="AGL"
-      target="https://tools.ietf.org/id/draft-agl-dane-serializechain-01.txt">
-      <front>
-        <title>Serializing DNS Records with DNSSEC
-          Authentication</title>
-        <author fullname="Adam Langley" initials="A"
-                surname="Langley" />
-        <organization>Google, Inc</organization>
-      </front>
-    </reference>
-    <reference anchor="DANESMTP"
-      target="https://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-19">
-      <front>
-        <title>SMTP Security via opportunistic DANE TLS</title>
-        <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
-        <author fullname="Wes Hardaker" initials="W" surname="Hardaker" />
-      </front>
-    </reference>
     &rfc1035;
     &rfc2119;
     &rfc4034;
@@ -479,6 +462,26 @@ like the validation_chain function in getdns]
     &rfc5246;
     &rfc6066;
     &rfc6698;
+    <reference anchor="DANESMTP"
+      target="https://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-19">
+      <front>
+        <title>SMTP Security via opportunistic DANE TLS</title>
+        <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
+        <author fullname="Wes Hardaker" initials="W" surname="Hardaker" />
+      </front>
+    </reference>
   </references>
+
+  <references title="Informative References">
+    <reference anchor="AGL"
+	       target="https://tools.ietf.org/id/draft-agl-dane-serializechain-01.txt">
+      <front>
+        <title>Serializing DNS Records with DNSSEC Authentication</title>
+        <author fullname="Adam Langley" initials="A" surname="Langley" />
+        <organization>Google, Inc</organization>
+      </front>
+    </reference>
+  </references>
+
 </back>
 </rfc>
