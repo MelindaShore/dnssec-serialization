@@ -192,6 +192,9 @@ entire validation chain as a single opaque binary blob.]
 
 opaque ValidationChain&lt;0..2^16-1&gt;;
 
+[Question: should we have version number, in case the format
+changes in the future?]
+
 [Then describe what the blob contains in terms of the
 sequence of DNS records:]
 
@@ -213,6 +216,9 @@ com. DNSKEY
 example.com. DS
 example.com. DNSKEY
 _443._tcp.www.example.com. TLSA
+
+[Note: check what format existing DNS libraries return already,
+like the validation_chain function in getdns]
 
         </artwork>
       </figure>
@@ -290,6 +296,14 @@ _443._tcp.www.example.com. TLSA
       chain (by employing similar pointers to previous locations)
       to save space, but the current specification uses uncompressed
       domain names only.
+    </t>
+    <t>
+      [Question: (for the future): should we consider the use of
+      traditional compression algorithms like those used by gzip,
+      bzip2, xz, etc, rather than contemplating a new label
+      compression scheme for a serialized chain? This probably
+      needs an evaluation first of how compressible wire form
+      domain names are using those algorithms.]
     </t>
     <t>
       If the server acts as its own full  iterative DNS resolver, 
@@ -378,7 +392,7 @@ _443._tcp.www.example.com. TLSA
       which are already widely used today.
     </t>
     <t>
-      Would another option might be the following?: assume the TLS
+      Would another option be the following?: assume the TLS
       server has accurate time, extract the remote time from the
       TLS handshake, and use that? There are tools that synchronize
       time in this way already (see "tlsdate"). However, this might
