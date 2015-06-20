@@ -4,9 +4,10 @@
 <!ENTITY rfc2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
 <!ENTITY rfc4034 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4034.xml">
 <!ENTITY rfc4035 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4035.xml">
-<!ENTITY rfc4366 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4366.xml">
+<!ENTITY rfc4330 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4330.xml">
 <!ENTITY rfc5011 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5011.xml">
 <!ENTITY rfc5246 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5246.xml">
+<!ENTITY rfc5905 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5905.xml">
 <!ENTITY rfc6066 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6066.xml">
 <!ENTITY rfc6698 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6698.xml">
 ]>
@@ -64,17 +65,13 @@
   <workgroup>TLS</workgroup>
   <abstract>
     <t>
-      This draft describes a new TLS v1.2
-      extension for transport of a DNS record serialized
-      with all the DNSSEC signatures needed to authenticate
-      that record.
-      The intent of this proposal is to allow TLS clients to
-      perform DANE authentication of a TLS server without needing to
-      perform additional DNS record lookups. It also avoids potential
-      problems with TLS clients being unable to lookup DANE records
-      because of an interfering middlebox. And lastly, it allows TLS
-      clients to validate DANE records without needing access to a
-      validating resolver.
+      This draft describes a new TLS v1.2 extension for
+      transport of a DNS record serialized with the DNSSEC
+      signatures needed to authenticate that record.  The
+      intent of this proposal is to allow TLS clients to
+      perform DANE authentication of a TLS server
+      certificate without needing to perform additional DNS
+      record lookups.  
     </t>
   </abstract>
 </front>
@@ -91,38 +88,39 @@
 
   <section title="Introduction">
     <t>
-      This draft describes
-      a new <xref target="RFC5246">TLS v1.2</xref>
-      <xref target="RFC6066">extension</xref>
-      for transport of a DNS record serialized
-      with all of the <xref target="RFC4034">DNSSEC signatures</xref> 
-      needed to authenticate that record. 
-      The intent of this proposal is to allow TLS clients to 
-      perform <xref target="RFC6698">DANE authentication</xref> of a 
-      TLS server without needing to
-      perform additional DNS record lookups and incurring the
-      associated latency penalty. It also avoids potential 
-      problems with TLS clients being unable to lookup DANE records
-      because of an interfering or broken middlebox. Ideally 
-      misbehaving middleboxes should be repaired but as a practical
-      matter it is not possible to do so at the scale of today's
-      Internet in a reasonable amount of time, so a solution to
-      workaround this problem is needed for clients that are stuck
-      behind them. And lastly, it allows a TLS client to 
-      validate DANE records itself without needing access to
-      a validating DNS resolver to which it has a secure connection.
+      This draft describes a new <xref target="RFC5246">TLS
+      v1.2</xref> <xref target="RFC6066">extension</xref>
+      for transport of a DNS record serialized with the
+      <xref target="RFC4034">DNSSEC signatures</xref> needed
+      to authenticate that record.  The intent of this
+      proposal is to allow TLS clients to perform <xref
+      target="RFC6698">DANE authentication</xref> of a TLS
+      server certificate without performing perform
+      additional DNS record lookups and incurring the
+      associated latency penalty. It also provides the
+      ability to avoid potential problems with TLS clients
+      being unable to look up DANE records because of an
+      interfering or broken middlebox on the path between
+      the endpoint and a DNS server. And lastly, it allows a
+      TLS client to validate DANE records itself without
+      needing access to a validating DNS resolver to which
+      it has a secure connection.
     </t>
 
     <t>
-      Application adoption advice: this mechanism is useful for
-      TLS applications that need to address the problems described 
-      above. It may not be relevant for many other applications. For
-      example, SMTP MTAs are usually located in data centers and not
-      behind broken middleboxes, they can tolerate extra DNS lookup
-      latency, and are on servers where it is easier to provision
-      a validating resolver. Hence <xref target="DANESMTP">DANE 
-      authentication of SMTP MTAs</xref> is not likely to make use 
-      of this mechanism.
+      This mechanism is useful
+      for TLS applications that need to address the problems
+      described above, typically web browsers or VoIP and
+      XMPP services. It may not be relevant for many other
+      applications. For example, SMTP MTAs are usually
+      located in data centers, may tolerate
+      extra DNS lookup latency, are on servers where it is
+      easier to provision a validating resolver, and are
+      less likely to experience traffic interference from
+      misconfigured middleboxes. Hence <xref
+      target="DANESMTP">DANE authentication of SMTP
+      MTAs</xref> is not likely to gain much advantage from
+      this mechanism.
     </t>
 
     <t>
@@ -131,8 +129,8 @@
       chain be returned in the (extended) server hello message.
       If the server is configured for DANE authentication, then
       it performs the appropriate DNS queries, builds the validation
-      chain, and returns it to the client. Most of the time the 
-      server will return a previously cached validation chain, but
+      chain, and returns it to the client. The
+      server will usually use a previously cached validation chain, but
       it will need to rebuild it periodically as described in
       <xref target="sec_caching" />. 
       The client then authenticates the chain using a pre-configured 
@@ -140,20 +138,19 @@
     </t>
 
     <t>
-      This specification builds on Adam Langley's <xref target="AGL">
-      earlier proposal for serializing DNSSEC validation chains</xref>,
-      from which it incorporates some ideas and text. It modifies the
-      approach by using a sequence of DNS records in uncompressed
-      DNS wire format instead of a custom serialization format. It 
-      also refers more extensively to official DNSSEC protocol documents
-      for descriptions of how to perform DNSSEC validation rather than
-      describing a validation algorithm in the document, which runs the
-      risk of diverging later from the official DNSSEC protocol
-      specifications. This new approach makes it easier for implementers
-      to use DNS specific libraries to implement these functions, and
-      greatly reduces the possibility of implementation errors. An
-      appendix to be provided in a later revision of this document will
-      include sample code to show one way to do this.
+      This specification builds on Adam Langley's earlier
+      proposal for serializing DNSSEC validation chains from
+      which it incorporates some ideas and text. It modifies
+      that mechanism by using a sequence of DNS records in
+      uncompressed DNS wire format instead of a custom
+      serialization format. It also relies on DNSSEC
+      protocol documents for DNSSEC validation
+      procedures. These two changes make it easier for
+      implementers to use existing DNS libraries to
+      implement these functions and greatly reduces the
+      possibility of transcoding or implementation
+      errors. An appendix to be provided in a later revision
+      of this document will include sample code.
     </t>
 
   </section> <!-- introduction -->
@@ -174,9 +171,10 @@
       in the extended ServerHello message, using the format
       described below.  If a server is unable to return a
       validation chain, or does not wish to return a
-      validation chain, it returns an empty "dnssec_chain"
-      structure - this makes it easy to probe whether a TLS
-      server implementation supports this extension or not.
+      validation chain, it returns an empty dnssec_chain
+      structure.  As with all TLS extensions, if the server
+      does not support this extension it will not return any
+      validation chain.
     </t>
 
     <t>
@@ -196,60 +194,74 @@
 	format DNS records.
       </t>
 
+      <t>The validation chain is here a TLS data structure that
+        treats the entire validation chain as a single opaque binary
+        blob.</t>
+
       <figure>
         <artwork>
 
-[First describe here a TLS data structure that treats the
-entire validation chain as a single opaque binary blob.]
 
-opaque ValidationChain&lt;0..2^16-1&gt;;
+          struct {
+              uint16 version;
+              opaque validation_data&lt;0..2^16-1&gt;;
+          } ValidationChain
 
-[Question: should we have version number, in case the format
-changes in the future?]
+        </artwork>
+      </figure>
+      
 
-[Then describe what the blob contains in terms of the
-sequence of DNS records:]
+      <t>The internal structure of a validation_data blob is
+        opaque to TLS and will be handed off to a validator
+        intact.  It will consist of a sequence of:</t>
 
-We want something like a sequence of:
+      <figure>
+        <artwork>
 
-Trust anchor DNSKEY, RRSIG(Trust anchor DNSKEY)
-* For every intervening delegation:
-  DS, RRSIG(DS)
-  DNSKEY, RRSIG(DNSKEY)
-TLSA, RRSIG(TLSA)
-
-So for the HTTPS server at www.example.com, where there are zone
-cuts at "com." and "example.com.", we might get the 
-following record sets, each with accompanying RRSIGs:
-
-. DNSKEY
-com. DS
-com. DNSKEY
-example.com. DS
-example.com. DNSKEY
-_443._tcp.www.example.com. TLSA
-
-[Note: check what format existing DNS libraries return already,
-like the validation_chain function in getdns]
+          Trust anchor DNSKEY, RRSIG(Trust anchor DNSKEY)
+          * For every intervening delegation:
+          DS, RRSIG(DS)
+          DNSKEY, RRSIG(DNSKEY)
+          TLSA, RRSIG(TLSA)
 
         </artwork>
       </figure>
 
-   <t>
-     MORE DESCRIPTION TO BE FILLED IN.
-   </t>
+      <t>For example, for the HTTPS server at
+        www.example.com, where there are zone cuts at "com."
+        and "example.com.", we might get the following
+        record sets, each with accompanying RRSIGs:</t>
 
+      <figure>
+        <artwork>
+          . DNSKEY
+          com. DS
+          com. DNSKEY
+          example.com. DS
+          example.com. DNSKEY
+          _443._tcp.www.example.com. TLSA
+        </artwork>
+      </figure>
+
+      <t>[Note: check what format existing DNS libraries
+        return already, like the validation_chain function in
+        getdns]</t>
+
+
+      <t>
+        MORE DESCRIPTION TO BE FILLED IN.
+      </t>
+      
     </section> <!-- validation chain data -->
 
   </section> <!-- dnssec validation chain extension -->
-
 
   <section title="Construction of Serialized Validation
                   Chains">
 
     <t>
-      This section describes a possible procedure for the server
-      to build the serialized DNSSEC chain. 
+      This section describes a possible procedure for the
+      server to use to build the serialized DNSSEC chain.
     </t>
 
     <t>When the goal is to perform DANE authentication 
@@ -262,7 +274,7 @@ like the validation_chain function in getdns]
     <t>
       The domain name of the server SHOULD be that included in
       the TLS Server Name Indication extension
-      <xref target="RFC4366" /> when present. If the Server Name 
+      <xref target="RFC6066" /> when present. If the Server Name 
       Indication extension is not present, or if the server does not 
       recognize the provided name and wishes to proceed with the handshake 
       rather than aborting the connection, the server uses the
@@ -318,7 +330,7 @@ like the validation_chain function in getdns]
       domain names are using those algorithms.]
     </t>
     <t>
-      If the server acts as its own full  iterative DNS resolver, 
+      If the server acts as its own full iterative DNS resolver, 
       it can just build the chain as it performs normal iterative 
       resolution of the target record. If the server uses a 
       recursive server (which is expected to be a more common case),
@@ -349,22 +361,19 @@ like the validation_chain function in getdns]
   </section>
 
 
-  <section title="Verification" anchor="sec_verification">
+  <section title="Validataion" anchor="sec_verification">
 
     <t>
-      [Question: Should we rename this section "Validation" to be more
-      consistent with terminology used in DNS?]
-    </t>
-    <t>
-      A TLS client making use of this specification, and which receives
-      a DNSSEC validation chain extension from a server, SHOULD use this
-      information to perform DANE authentication of the server certificate.
-      In order to do this, it provides the chain and its configured trust
-      anchor to a DNSSEC validation engine or library, which performs 
-      validation according to the 
-      <xref target="RFC4035">DNSSEC protocol</xref>.
-      If the record is correctly authenticated, it then performs DANE
-      authentication according to the 
+      A TLS client making use of this specification, and
+      which receives a DNSSEC validation chain extension
+      from a server, SHOULD use this information to perform
+      DANE authentication of the server certificate.  In
+      order to do this, it uses the mechanism specified by
+      the <xref target="RFC4035">DNSSEC protocol</xref>.
+      This mechanism is typically implemented in a DNSSEC
+      validation engine or library.  If the record is
+      correctly authenticated, the client then performs DANE
+      authentication according to the
       <xref target="RFC6698">DANE TLS protocol</xref>.
       [More details needed?]
     </t>
@@ -375,15 +384,15 @@ like the validation_chain function in getdns]
   <section title="Trust Anchor Maintenance" anchor="sec_trustmaint">
 
     <t>
-      The trust anchor could periodically change, e.g. due to a
+      The trust anchor may change periodically, e.g. due to a
       key rollover event by the operator of the initial zone. Managed 
       key rollovers typically use a process that can be tracked by 
       verifiers allowing them to automatically update their trust 
       anchors, as described in <xref target="RFC5011" />. TLS clients 
       using this specification are also expected to use such a mechanism 
       to keep their trust anchors updated. Some operating systems may 
-      have a system wide service to maintain and keep up-to-date the 
-      root trust anchor, and it may be possible for the TLS client 
+      have a system-wide service to maintain and keep up-to-date the 
+      root trust anchor.  It may be possible for the TLS client 
       application to simply reference that as its trust anchor,
       periodically checking whether it has changed.
     </t>
@@ -401,18 +410,10 @@ like the validation_chain function in getdns]
       and expiration time. 
       TLS clients need roughly accurate time in order to properly
       authenticate these signatures. This could be achieved by running
-      a time synchronization protocol like NTP (reference?) or SNTP,
+      a time synchronization protocol like NTP
+      <xref target="RFC5905" /> or SNTP
+      <xref target="RFC4330" />,
       which are already widely used today.
-    </t>
-    <t>
-      Would another option be the following?: assume the TLS
-      server has accurate time, extract the remote time from the
-      TLS handshake, and use that? There are tools that synchronize
-      time in this way already (see "tlsdate"). However, this might
-      be vulnerable to a minor attack: A malicious TLS server, before
-      it's been DANE authenticated, could provide a false time, in 
-      order to trick a client into accepting a previously valid 
-      signed DNS record (i.e. a replay attack).
     </t>
 
   </section> <!-- verification -->
@@ -427,15 +428,20 @@ like the validation_chain function in getdns]
     <t>This extension requires the registration of a new
       value in the TLS ExtensionsType registry.  For
       temporary use during initial implementation efforts,
-      the "dnssec_chain" extension will take the value 36.</t>
+      the "dnssec_chain" extension will take the value
+      36.</t>
+    <t>The authors intend to request early allocation to
+      support experiments and implementations currently
+      underway.</t> 
   </section> <!-- iana considerations -->
 
   <section title="Acknowledgments">
     <t>
       Many thanks to Adam Langley for laying the groundwork
-      for this extension. This document also benefited from 
-      discussions with the following people: Allison Mankin
-      and Duane Wessels.
+      for this extension. This document also benefited from
+      discussions with and review from the following people:
+      Allison Mankin, Duane Wessels, Willem Toorop, Jeff
+      Hodges, and Gowri Visweswaran.
     </t>
   </section>
 
@@ -457,11 +463,15 @@ like the validation_chain function in getdns]
     &rfc2119;
     &rfc4034;
     &rfc4035;
-    &rfc4366;
-    &rfc5011;
     &rfc5246;
     &rfc6066;
     &rfc6698;
+  </references>
+
+  <references title="Informative References">
+    &rfc4330;
+    &rfc5011;
+    &rfc5905;
     <reference anchor="DANESMTP"
       target="https://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-19">
       <front>
@@ -472,16 +482,13 @@ like the validation_chain function in getdns]
     </reference>
   </references>
 
-  <references title="Informative References">
-    <reference anchor="AGL"
-	       target="https://tools.ietf.org/id/draft-agl-dane-serializechain-01.txt">
-      <front>
-        <title>Serializing DNS Records with DNSSEC Authentication</title>
-        <author fullname="Adam Langley" initials="A" surname="Langley" />
-        <organization>Google, Inc</organization>
-      </front>
-    </reference>
-  </references>
+  <section title="Pseudocode example">
+    <t>[code goes here]</t>
+  </section> <!-- pseudocode -->
+
+  <section title="Test vector">
+    <t>[data go here]</t>
+  </section> <!-- test vector -->
 
 </back>
 </rfc>
