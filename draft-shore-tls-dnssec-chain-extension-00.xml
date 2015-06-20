@@ -164,7 +164,7 @@
       validation chain, or does not wish to return a
       validation chain, it returns an empty "dnssec_chain"
       structure - this makes it easy to probe whether a TLS
-      server supports this extension or not.
+      server implementation supports this extension or not.
     </t>
 
     <t>
@@ -272,7 +272,7 @@ _443._tcp.www.example.com. TLSA
     <t>
       The components of the validation chain series are built by
       starting at the trust anchor DNSKEY (usually expected to be
-      the DNS root trust anchor) and it corresponding RRSIG 
+      the DNS root trust anchor) and its corresponding RRSIG 
       signature record, and then for each intervening zone cut, 
       adding the DS record and DNSKEY records and their RRSIGs, and 
       finally the target TLSA record and RRSIG.
@@ -326,9 +326,20 @@ _443._tcp.www.example.com. TLSA
   <section title="Verification" anchor="sec_verification">
 
     <t>
-      [PLACEHOLDER: Here will mostly refer to official DNSSEC protocol specs
-      for how to do validation, given a received DNSSEC validation chain,
-      and a configured trust anchor.]
+      [Question: Should we rename this section "Validation" to be more
+      consistent with terminology used in DNS?]
+    </t>
+    <t>
+      A TLS client making use of this specification, and which receives
+      a DNSSEC validation chain extension from a server, SHOULD use this
+      information to perform DANE authentication of the server certificate.
+      In order to do this, it provides the chain and its configured trust
+      anchor to a DNSSEC validation engine, which performs validation 
+      according to the <xref target="RFC4035">DNSSEC protocol</xref>.
+      If the record is correctly authenticated, it then performs DANE
+      authentication according to the 
+      <xref target="RFC6698">DANE TLS protocol</xref>.
+      [More details needed?]
     </t>
 
   </section> <!-- verification -->
@@ -356,11 +367,25 @@ _443._tcp.www.example.com. TLSA
   <section title="Other Considerations" anchor="sec_other">
 
     <t>
-      [Reasonably accurate time is needed on clients to be able to 
-      properly validate DNSSEC signatures which have signature
-      inception and expiration parameters. Do we recommend using
-      NTP?]
-
+      [Does the accurate time issue belong in Security Considerations?]
+    </t>
+    <t>
+      DNSSEC signatures have validity periods defined by an inception
+      and expiration time. 
+      TLS clients need roughly accurate time in order to properly
+      authenticate these signatures. This could be achieved by running
+      a time synchronization protocol like NTP (reference?) or SNTP,
+      which are already widely used today.
+    </t>
+    <t>
+      Would another option might be the following?: assume the TLS
+      server has accurate time, extract the remote time from the
+      TLS handshake, and use that? There are tools that synchronize
+      time in this way already (see "tlsdate"). However, this might
+      be vulnerable to a minor attack: A malicious TLS server, before
+      it's been DANE authenticated, could provide a false time, in 
+      order to trick a client into accepting a previously valid 
+      signed DNS record (i.e. a replay attack).
     </t>
 
   </section> <!-- verification -->
