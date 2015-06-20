@@ -203,162 +203,6 @@ TLSA, RRSIG(TLSA)
 
   </section> <!-- dnssec validation chain extension -->
 
-  <section title="Verification" anchor="sec_verification">
-
-    <t>This text describes the process of verifying a
-      serialized DNS record.  Any process that produces a
-      valid input to this process is a valid encoder.
-      It is assumed that this process would be performed by
-      a TLS client.</t>
-
-    <t>The verification procedure starts in an initial
-      state, advances to the "ENTERING" state and then
-      cycles between that and a "LEAVING" state until a
-      terminal "LEAVING" state, or error, is reached.  A
-      priori, the verifier is assumed to know the initial
-      key (trust anchor) and an initial zone.  Most commonly 
-      and for the purposes of this text, the initial key is 
-      assumed to be the IANA root key and the initial zone is 
-      assumed to be the root zone.  However, the same scheme could 
-      be used when starting in a subzone.  At all times the verifier 
-      also holds a target name.  The target name is known a
-      priori but may be updated during the course of
-      verification.  The target name is the domain name for
-      which a DNS record is being verified.  The verifier
-      also maintains a stack of zones.  Each zone has a name
-      and a set of trusted keys for that zone.</t>
-
-    <t>
-      The trust anchor could periodically change, e.g. due to a
-      key rollover event by the operator of the initial zone. Managed 
-      key rollovers typically use a process that can be tracked by 
-      verifiers allowing them to automatically update their trust 
-      anchors, as described in <xref target="RFC5011" />. TLS clients 
-      using this specification are also expected to use such a mechanism 
-      to keep their trust anchors updated. Some operating systems may 
-      have a system wide service to maintain and keep up-to-date the 
-      root trust anchor, and it may be possible for the TLS client 
-      application to simply reference that as its trust anchor,
-      periodically checking whether it has changed.
-    </t>
-
-    <section title="The INITIAL State">
-      <t>   In the "INITIAL" state the verifier reads the
-        following:</t>
-
-      <figure>
-        <artwork>
-          
-   uint16 initial_key_tag;
-
-        </artwork>
-      </figure>
-
-      <t>The value of "initial_key_tag" is the key tag (see
-        <xref target="RFC4034" />, Appendix B) of the
-        initial key.  This serves as a check that the
-        verifier's initial key and initial zone match that
-        which is being assumed.  The verifier checks that
-        the entry key of the next zone matches the initial
-        key.  (Understanding this requires reading the next
-        section.)</t>
-
-      <t>The verifier moves to the "ENTERING" state.</t>
-
-    </section> <!-- INITIAL -->
-
-    <section title="The ENTERING State">
-
-      <t>In the "ENTERING" state the verifier reads an
-        "Entry" structure.</t>
-
-      <t>The verifier extracts the entry key, which is found
-        in the "Key" array and indexed by "entry_key_index".
-        The entry key in the initial zone may have a zero
-        length, in which case it's assumed to be the initial
-        key.  Otherwise the "rdata" member of the "Key"
-        structures MUST have the format for "DNSKEY RRDATA"
-        described in <xref target="RFC4034" /> section 2.1.  The
-        verifier MUST check that bit 7 of the "DNSKEY" flags
-        is set.</t>
-
-      <t>As a precondition of the "ENTERING" state, the
-        entry key has already been validated so the verifier
-        adds the entry key to the set of trusted keys for
-        the current zone.</t>
-
-      <t>If "key_sig" is non-empty then the verifier
-        constructs an "RRSIG RDATA" from the information in
-        the "Signature" structure and the current zone name.
-        The verifier constructs an "RRSET" from the "rdata"
-        member of the "Key" structures.  (The "Key"
-        structures MUST be in canonical order as specified
-        in <xref target="RFC4034" /> section 6.3.)</t>
-
-      <t>If the constructed "RRSIG" is a valid signature
-        over the constructed "RRSET" using the entry key,
-        then all the keys from the "Key" array are added to
-        the set of trusted keys for the current zone.  If
-        "key_sig" is non-empty and the signature is invalid
-        then the verification fails.</t>
-
-      <t>The verifier moves to the "LEAVING" state.</t>
-
-    </section> <!-- entering -->
-
-    <section title="The Leaving State">
-
-      <t>In the "LEAVING" state the verifier reads a "Exit"
-        structure.</t>
-
-      <t>If "rrtype" is "DS" then the verifier fills in any
-        empty digests based on the entry key of the next
-        "Entry" structure.  (The verifier has to read ahead
-        in order to calculate this.)  If the verifier cannot
-        calculate any digests then the verification fails.
-        The verifier MUST check that at least one "DS"
-        record is either filled in, or is a valid digest of
-        the entry key of the next "Entry" structure.  After
-        substituting any empty digests, the "Ds" structures
-        MUST be in canonical order as specified in <xref target="RFC4034" />
-        section 6.3.</t>
-
-      <t>The verifier checks that an "RRSIG RDATA"
-        constructed from "rrsig" is a valid signature over
-        the "RRDATA"s.  If not, the verification fails.  The
-        "RRDATA"s MUST be in canonical order as specified in
-        <xref target="RFC4034" /> section 6.3.</t>
-
-      <t>If "rrtype" is "DS" then the verifier MUST check
-        that "next_name" matches a greater number labels,
-        right-to-left, of the current target name than the
-        current zone name.  The verifier pushes the current
-        zone on the stack and moves to the "ENTERING" state
-        with "next_name" as the zone name.</t>
-
-      <t>If "rrtype" is "CNAME" then the verifier MUST check
-        that "next_name" matches the current target name.
-        The contents of the "CNAME" record then become the
-        new target name.  The verifier moves to the
-        "LEAVING" state and pops the minimum number of zones
-        from the stack so the the new target name is within
-        the current zone.</t>
-
-      <t>If "rrtype" is "NSEC" or "NSEC3" then the verifier
-        MUST check that "next_name" is within the current
-        zone.  The verifier terminates successfully and
-        returns the "rrtype" and "RRDATA" of the record.
-        The record may be used to establish the
-        non-existence of the target record but that is not
-        specified in this text.</t>
-
-      <t>Otherwise, the verifier MUST check that "next_name"
-        matches the target name.  The verifier terminates
-        successfully and returns the "rrtype" and "RRDATA"
-        of the record.</t>
-
-    </section> <!-- leaving -->
-  </section> <!-- verification -->
 
   <section title="Construction of Serialized Validation
                   Chains">
@@ -404,70 +248,11 @@ TLSA, RRSIG(TLSA)
       that may make use of them.
     </t>
 
-    <t>First, make a request for a "CNAME" record at the
-      domain.  If a "CNAME" record exists, then it is the
-      terminal record.  Otherwise resolve a record of a
-      desired type at the domain.  If neither record exists,
-      fail.</t>
-
-    <t>Now find the chain of zone names leading to that
-      domain.  The parent zone of a domain is typically
-      returned as an "SOA" record in the authority section
-      for any query to that domain, unless the domain is a
-      zone cut itself.  In the event that a domain has an
-      SOA record, then simply remove the left-most label
-      from the name and try again.</t>
-
     <t>
-      [The description above about when SOA records appear in the
-      authority section is not entirely correct. I'll reword this
-      later to fix -- SH]
+      [INSERT NEW TEXT HERE ABOUT A CLEANER WAY TO PERFORM TOP
+      DOWN CONSTRUCTION OF THE DNS QUERIES USING THE NORMAL WAY
+      A DNS RESOLVER WOULD DO IT]
     </t>
-
-    <t>Construct an array of zone records, one for each zone
-      leading to the domain name, including the root zone.
-      For each zone, fetch the set of "DNSKEY" records (with
-      "DO" flag to get the "RRSIG"s) and, for every zone
-      expect the last one, fetch the "DS" records for the
-      next zone (also with "DO").  If any zones don't have
-      either of those record types then there isn't a DNSSEC
-      chain to the desired record and the construction
-      fails.  The "DS" records are the exit records for all
-      zones save the last.  For the last zone, the exit
-      record is the terminal record.  Sort all records so
-      that they are in canonical order as specified in
-      <xref target="RFC4034" /> section 6.3.</t>
-
-    <t>For each zone, verify the signature on the exit
-      records with each possible key (using key tags to skip
-      some keys).  The set of keys that sign the exit
-      records are called exit keys.</t>
-
-    <t>For the root zone, the entry key is the shared root
-      key.  For all other zones, look at the parent zone's
-      "DS" records and mark keys as possible entry keys if
-      there is a "DS" record for them and the hash function
-      is commonly accepted.  (At the time of writing, "SHA1"
-      and "SHA256" are such hash functions.)  Filter the
-      possible entry keys to only include those that have
-      the SEP bit set in the flags.  If any zone has no
-      possible entry keys then the construction fails.</t>
-
-    <t>For each zone, take the intersection of possible
-      entry keys and exit keys.  If the intersection is
-      non-empty, pick one of those keys and discard the rest
-      along with the signature over the keys.  Otherwise,
-      filter the acceptable entry keys by considering only
-      those for which a valid signature over the "DNSKEY
-      RRSET" can be found.  Pick an acceptable entry and
-      exit key.</t>
-
-    <t>Serialize the current zones.  If the target record is
-      a "CNAME" then repeat this procedure for the new name.
-      Before serializing the zones, find the most junior
-      zone that is shared with the previous set of zones.
-      Discard all zones senior to it and omit its "Entry"
-      structure when serializing.</t>
 
   </section> <!-- construction -->
 
@@ -486,6 +271,32 @@ TLSA, RRSIG(TLSA)
       intervals.
     </t>
   </section>
+
+
+  <section title="Verification" anchor="sec_verification">
+
+    <t>
+      [PLACEHOLDER: Here will mostly refer to official DNSSEC protocol specs
+      for how to do validation, given a received DNSSEC validation chain,
+      and a configured trust anchor.]
+    </t>
+
+    <t>
+      The trust anchor could periodically change, e.g. due to a
+      key rollover event by the operator of the initial zone. Managed 
+      key rollovers typically use a process that can be tracked by 
+      verifiers allowing them to automatically update their trust 
+      anchors, as described in <xref target="RFC5011" />. TLS clients 
+      using this specification are also expected to use such a mechanism 
+      to keep their trust anchors updated. Some operating systems may 
+      have a system wide service to maintain and keep up-to-date the 
+      root trust anchor, and it may be possible for the TLS client 
+      application to simply reference that as its trust anchor,
+      periodically checking whether it has changed.
+    </t>
+
+  </section> <!-- verification -->
+
 
   <section title="Security Considerations">
     <t>Security considerations covered in <xref
