@@ -113,6 +113,14 @@
       The extension described here allows a TLS client to
       request in the client hello message that the DNS validation 
       chain be returned in the (extended) server hello message.
+      If the server is configured for DANE authentication, then
+      it performs the appropriate DNS queries, builds the validation
+      chain, and returns it to the client. Most of the time the 
+      server will return a previously cached validation chain, but
+      it will need to rebuild it periodically as described in
+      <xref target="sec_verification" />. 
+      The client then authenticates the chain using a pre-configured 
+      trust anchor.
     </t>
 
     <t>
@@ -341,7 +349,7 @@
 
   </section> <!-- dnssec validation chain extension -->
 
-  <section title="Verification">
+  <section title="Verification" anchor="sec_verification">
     <t>This text describes the process of verifying a
       serialized DNS record.  Any process that produces a
       valid input to this process is a valid encoder.
