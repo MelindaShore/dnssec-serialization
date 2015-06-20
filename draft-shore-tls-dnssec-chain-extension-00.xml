@@ -71,7 +71,8 @@
       perform additional DNS record lookups. It also avoids potential
       problems with TLS clients being unable to lookup DANE records
       because of an interfering middlebox. And lastly, it allows TLS
-      clients to more easily validate DANE records.
+      clients to validate DANE records without needing access to a
+      validating resolver.
     </t>
   </abstract>
 </front>
@@ -104,7 +105,7 @@
       matter it is not possible to do so at the scale of today's
       Internet in a reasonable amount of time, so a solution to
       workaround this problem is needed for clients that are stuck
-      behind them. And lastly, it allows a TLS client to more easily 
+      behind them. And lastly, it allows a TLS client to 
       validate DANE records itself without needing access to
       a validating DNS resolver to which it has a secure connection.
     </t>
@@ -145,211 +146,65 @@
   <section title="DNSSEC Validation Chain Extension">
     <section title="Protocol">
 
-    <t>To avoid sending multiple round trips to a DNS server
-      to retrieve the records needed to validate a DNSSEC
-      record, a client MAY include an extension of type
+    <t>
+      A client MAY include an extension of type
       "dnssec_chain" in the (extended) ClientHello.  The
       "extension_data" field of this extension MUST be
-      empty.</t>
+      empty.
+    </t>
 
-    <t>Servers receiving a "dnssec_chain" extension in the
-      client hello MAY return a serialized validation chain
+    <t>
+      Servers receiving a "dnssec_chain" extension in the
+      client hello SHOULD return a serialized validation chain
       in the extended ServerHello message, using the format
       described below.  If a server is unable to return a
       validation chain, or does not wish to return a
-      validation chain, it omits the "dnssec_chain"
-      extension in the response. [NOTE: would this make more
-      sense if it returned an empty dnssec_chain?  The
-      client would then know that the server supports the
-      extension, at least. (I think yes - SH)]</t>
+      validation chain, it returns an empty "dnssec_chain"
+      structure - this makes it easy to probe whether a TLS
+      server supports this extension or not.
+    </t>
 
-    <t>Note that any messages associated with these
+    <t>
+      Note that any messages associated with these
       extensions that are sent during the TLS handshake MUST
       be included in the hash calculations involved in
-      "Finished" messages.</t>
+      "Finished" messages.
+    </t>
     
     </section> <!-- protocol -->
 
     <section title="DNSSEC Validation Chain Data">
-      <t>The "extension_data" field of the "dnssec_chain"
-        extension (36) contains a key tag of the shared,
-        initial key, followed by a series of "Entry" and "Exit"
-        structures.  </t>
 
-      <t>[NOTE: I've dropped the length field where it's
-        closely coupled with one particular data field, since
-        according to the TLS spec the length field is
-        implied and must be included, anyway]</t>
-
-      <t>A "Signature" structure is the "RRSIG RDATA" wire
-        format from <xref target="RFC4034">RFC 4034</xref>
-        section 3.1, with the Type Covered and Signer's Name
-        omitted. These values are implied by the context
-        when used in this serialization format and aren't
-        duplicated to save space.</t>
-
-      <t>The "length" member may be zero to signify that a
-        signature has been omitted.  In this case, no
-        further members of the structure will follow.</t>
+      <t>
+	The "extension_data" field of the "dnssec_chain"
+        extension (36) contains a sequence of uncompressed wire
+	format DNS records.
+      </t>
 
       <figure>
         <artwork>
 
-   struct {
-     uint16 length;
-     opaque algorithm;
-     opaque labels;
-     uint32 ttl;
-     uint32 expires;
-     uint32 begins;
-     uint16 key_tag;
-     opaque signature&lt;1..length - 16&gt;;
-   } Signature;
+We want something like a sequence of:
+
+Trust anchor DNSKEY, RRSIG(Trust anchor DNSKEY)
+* For every intervening delegation:
+  DS, RRSIG(DS)
+  DNSKEY, RRSIG(DNSKEY)
+TLSA, RRSIG(TLSA)
 
         </artwork>
       </figure>
 
-      <t>The "Key" and RRData structures are as follows: </t>
-
-      <t>Resource records are serialized using the DNS wire
-        format.  Keys, likewise, are exactly as specified in
-        <xref target="RFC4034" />.</t>
-
-      <figure>
-        <artwork>
-
-   struct {
-     opaque rdata&lt;0..65535&gt;;
-   }  Key;
-
-        </artwork>
-      </figure>
-
-      <figure>
-        <artwork>
-
-   struct {
-     opaque rrdata&lt;0..65535&gt;;
-   } RRData;
-
-        </artwork>
-      </figure>
-
-   <t>The Key Tag and Algorithm members of the "DS" record
-     from <xref target="RFC4034" /> section 5.1 are omitted because
-     they are implied by the context.  Additionally, the
-     "digest_len" member may be zero to indicate that the
-     digest itself is also implied by the context.</t>
-
-   <figure>
-     <artwork>
-
-   struct {
-     opaque digest_type;
-     uint16 digest_len;
-     opaque digest[digest_len];
-   } Ds;
-
-     </artwork>
-   </figure>
-
-   <t> A "Name" is a series of 8-bit, unsigned,
-     length-prefixed labels terminated by a the (empty) root
-     label.  Each label MUST be less than 64 bytes and the
-     full name (including lengths and the root label) MUST be
-     less than 256 bytes.</t>
-
-   <figure>
-     <artwork>
-
-   opaque Label&lt;0..63&gt;;
-   opaque RootLabel[0];
-
-   struct {
-     Label label1;
-     Label label2; 
-     ...
-     RootLabel rootlabel;
-   } Name;
-
-     </artwork>
-   </figure>
-
-   <t>The entry to a zone contains a number of keys and an
-     optional signature over those keys.  One of the keys
-     ("keys[entry_key_index]") is distinguished and called
-     the entry key.  The entry key is assumed to be trusted
-     and bit 7 of the flags field MUST be set.  The entry
-     key may have zero "length", in which case its value is
-     that of the shared, initial key.</t>
-
-   <t>The entry key may sign the resource records for this
-     zone, in which case "key_sig.length" SHOULD be zero,
-     "entry_key_index" SHOULD be zero and "num_keys" SHOULD
-     BE one.  Otherwise, "key_sig" is a signature over
-     "keys", which MUST be in be in canonical order as
-     specified in <xref target="RFC4034" /> section 6.3 after any
-     empty keys have been substituted.</t>
-
-   <figure>
-     <artwork>
-
-   struct {
-     opaque entry_key_index;
-     Signature key_sig;
-     opaque num_keys;
-     Key keys[num_keys];
-   } Entry;
-
-     </artwork>
-   </figure>
-
-   <t>Leaving a zone involves a number of resource records
-     at a domain in the zone.  The resource records are
-     signed by "rrsig", which MUST be a valid signature of
-     them either from the entry key or, if "key_sig.length"
-     is non-zero, one of the other "keys".</t>
-
-   <figure>
-     <artwork>
-
-   struct {
-     Name next_name;
-     uint16 rrtype;
-     Signature rrsig;
-
-     select (rrtype) {
-       case CNAME:   Name cname;
-       case DS:      Ds ds_records&lt;0..255&gt;
-
-       default:
-         uint8 num_rrs;
-         struct RRData rrs[num_rrs];
-       }
-     }
-   } Exit;
-
-     </artwork>
-   </figure>
-
-   <t>All resource records MUST be in canonical order as
-     specified in <xref target="RFC4034" /> section 6.3.  If the
-     "digest" member of any "DS" record is empty, then it is
-     implied that it is the digest of the next zone's entry
-     key and the order requirement is imposed after such
-     substitution.</t>
-
-   <t>A serialized chain is a "uint16" key tag of the
-     shared, initial key followed by a series of "Entry" and
-     "Exit" structures.  These structures alternate except
-     in the case a "CNAME" record, where upon several "Exit"
-     structures can occur consecutively.</t>
+   <t>
+     MORE DESCRIPTION TO BE FILLED IN.
+   </t>
 
     </section> <!-- validation chain data -->
 
   </section> <!-- dnssec validation chain extension -->
 
   <section title="Verification" anchor="sec_verification">
+
     <t>This text describes the process of verifying a
       serialized DNS record.  Any process that produces a
       valid input to this process is a valid encoder.
