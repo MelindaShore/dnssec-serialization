@@ -418,8 +418,12 @@ like the validation_chain function in getdns]
   </section> <!-- iana considerations -->
 
   <section title="Acknowledgments">
-    <t>Many thanks to Adam Langley for laying the groundwork
-      for this extension.</t>
+    <t>
+      Many thanks to Adam Langley for laying the groundwork
+      for this extension. This document also benefited from 
+      discussions with the following people: Allison Mankin
+      and Duane Wessels.
+    </t>
   </section>
 
   <section title="Test Vectors">
