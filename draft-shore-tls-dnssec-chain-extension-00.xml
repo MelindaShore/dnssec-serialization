@@ -311,42 +311,31 @@
     </t>
 
     <t>
-      Note: In updated versions of this specification, the use of 
-      other DANE style records may be described for TLS applications 
-      that may make use of them.
-    </t>
-
-    <t>
       The components of the authentication chain are built by
       starting at the trust anchor DNSKEY (usually expected to be
       the DNS root trust anchor) and its corresponding RRSIG 
       signature record, and then for each intervening zone cut, 
-      adding the DS record and DNSKEY records and their RRSIGs, and 
-      finally the target TLSA record and RRSIG.
-    </t>
-    <t>
-      Records in the authentication chain are stored in uncompressed
-      DNS wire format. DNS response packets contain wire format
-      records, but domain names in them can be "compressed" as
-      described in <xref target="RFC1035" /> by replacing a domain
-      name or a list of trailing labels with a pointer to a prior 
-      occurrence of the same name in the DNS packet. In the
-      construction of the authentication chain, DNS records MUST be
-      uncompressed. Note: A future version of this specification may
-      outline a method to compress domain names in the validation
-      chain (by employing similar pointers to previous locations)
-      to save space, but the current specification uses uncompressed
-      domain names only.
+      adding the DS record and DNSKEY RRsets and their RRSIGs, and 
+      finally the target TLSA record and RRSIG.  (As required above,
+      however, the serialized authentication chain will present the
+      RRsets in the opposite order.)
     </t>
     <t>
       If the server acts as its own full iterative DNS resolver, 
       it can just build the chain as it performs normal iterative 
       resolution of the target record. If the server uses a 
-      recursive server (which is expected to be a more common case),
-      it employs a slightly modified lookup algorithm. The modified
-      algorithm starts at the trust anchor, gradually prepends additional
-      labels and looks for NS, DS, and DNSKEY records, until it 
-      reaches the target name.
+      recursive resolver, it employs a slightly modified lookup
+      algorithm, starting at the trust anchor, prepending
+      additional labels, and looking for NS, DS, and DNSKEY records, 
+      until it reaches the target name.
+    </t>
+    <t>
+      In order to meet the formatting requirements above, the server
+      must perform some pre-processing on the resource records it
+      receives.  It must first compute the uncompressed representation
+      of the RRs, removing DNS name compression <xref target="RFC1035"/>
+      if present.  It then extracts the relevant fields from the resource
+      records and assembles them into an RRset.
     </t>
 
   </section> <!-- construction -->
@@ -381,6 +370,9 @@
       This mechanism is sometimes implemented in a DNSSEC
       validation engine or library.
     </t>
+
+    <!-- TODO: Add a precis of the algorithm here -->
+
     <t>
       If the record is
       correctly authenticated, the client then performs DANE
