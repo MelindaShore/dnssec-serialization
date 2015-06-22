@@ -400,26 +400,6 @@
 
   </section>
 
-
-  <section title="Other Considerations" anchor="sec_other">
-
-    <t>
-      [Does the accurate time issue belong in Security Considerations?]
-    </t>
-    <t>
-      DNSSEC signatures have validity periods defined by an inception
-      and expiration time. 
-      TLS clients need roughly accurate time in order to properly
-      authenticate these signatures. This could be achieved by running
-      a time synchronization protocol like NTP
-      <xref target="RFC5905" /> or SNTP
-      <xref target="RFC4330" />,
-      which are already widely used today.
-    </t>
-
-  </section> <!-- verification -->
-
-
   <section title="Security Considerations">
 
     <t> The security considerations of the normatively
@@ -442,6 +422,17 @@
       certificate fingerprint or full certificate (depending
       on the mode) should not be used without performing the
       DNSSEC validation (in the DNS-specific module.</t>
+
+    <t>
+      DNSSEC signatures have validity periods defined by an inception
+      and expiration time. 
+      TLS clients need roughly accurate time in order to properly
+      authenticate these signatures. This could be achieved by running
+      a time synchronization protocol like NTP
+      <xref target="RFC5905" /> or SNTP
+      <xref target="RFC4330" />,
+      which are already widely used today.
+    </t>
 
   </section>
 
