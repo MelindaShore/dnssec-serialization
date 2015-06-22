@@ -34,7 +34,7 @@
 
 <front>
   <title abbrev="TLS DNSSEC Chain Extension">
-    A DNSSEC and DANE Record Validation Chain Extension for TLS
+    A DANE Record and DNSSEC Authentication Chain Extension for TLS
   </title>
   <author fullname="Melinda Shore" initials="M"
           surname="Shore">
@@ -135,7 +135,7 @@
       If the server is configured for DANE authentication, then
       it performs the appropriate DNS queries, builds the validation
       chain, and returns it to the client. The
-      server will usually use a previously cached validation chain, but
+      server will usually use a previously cached authentication chain, but
       it will need to rebuild it periodically as described in
       <xref target="sec_caching" />. 
       The client then authenticates the chain using a pre-configured 
@@ -144,7 +144,7 @@
 
     <t>
       This specification takes off from Adam Langley's
-      proposal for serializing DNSSEC validation chains
+      proposal for serializing DNSSEC authentication chains
       <xref target="AGL" /> and it incorporates some ideas and text.  It
       modifies the approach by using DNS wire formats and
       assumes that in implementation, the serialized DNSSEC
@@ -157,7 +157,7 @@
 
   </section> <!-- introduction -->
 
-  <section title="DNSSEC Validation Chain Extension">
+  <section title="DNSSEC Authentication Chain Extension">
     <section title="Protocol">
 
     <t>
@@ -169,14 +169,14 @@
 
     <t>
       Servers receiving a "dnssec_chain" extension in the
-      client hello SHOULD return a serialized validation chain
+      client hello SHOULD return a serialized authentication chain
       in the extended ServerHello message, using the format
       described below.  If a server is unable to return a
-      validation chain, or does not wish to return a
-      validation chain, it returns an empty dnssec_chain
+      authentication chain, or does not wish to return a
+      authentication chain, it returns an empty dnssec_chain
       structure.  As with all TLS extensions, if the server
       does not support this extension it will not return any
-      validation chain.
+      authentication chain.
     </t>
 
     <t>
@@ -188,7 +188,7 @@
     
     </section> <!-- protocol -->
 
-    <section title="DNSSEC Validation Chain Data">
+    <section title="DNSSEC Authentication Chain Data">
 
       <t>
 	    The "valiation_data" field of the "dnssec_chain"
@@ -196,8 +196,8 @@
 	    wire format DNS records.
       </t>
 
-      <t>The validation chain is here a TLS data structure that
-        treats the entire validation chain as a single opaque binary
+      <t>The authentication chain is here a TLS data structure that
+        treats the entire authentication chain as a single opaque binary
         blob.</t>
 
       <figure>
@@ -254,12 +254,11 @@
         MORE DESCRIPTION TO BE FILLED IN.
       </t>
       
-    </section> <!-- validation chain data -->
+    </section> <!-- authentication chain data -->
 
-  </section> <!-- dnssec validation chain extension -->
+  </section> <!-- dnssec authentication chain extension -->
 
-  <section title="Construction of Serialized Validation
-                  Chains">
+  <section title="Construction of Serialized Authentication Chains">
 
     <t>
       This section describes a possible procedure for the
@@ -302,7 +301,7 @@
     </t>
 
     <t>
-      The components of the validation chain series are built by
+      The components of the authentication chain are built by
       starting at the trust anchor DNSKEY (usually expected to be
       the DNS root trust anchor) and its corresponding RRSIG 
       signature record, and then for each intervening zone cut, 
@@ -310,13 +309,13 @@
       finally the target TLSA record and RRSIG.
     </t>
     <t>
-      Records in the validation chain are stored in uncompressed
+      Records in the authentication chain are stored in uncompressed
       DNS wire format. DNS response packets contain wire format
       records, but domain names in them can be "compressed" as
       described in <xref target="RFC1035" /> by replacing a domain
       name or a list of trailing labels with a pointer to a prior 
       occurrence of the same name in the DNS packet. In the
-      construction of the validation chain, DNS records MUST be
+      construction of the authentication chain, DNS records MUST be
       uncompressed. Note: A future version of this specification may
       outline a method to compress domain names in the validation
       chain (by employing similar pointers to previous locations)
@@ -346,15 +345,15 @@
   </section> <!-- construction -->
 
 
-  <section title="Caching and Regeneration of the Validation Chain"
+  <section title="Caching and Regeneration of the Authentication Chain"
 	   anchor="sec_caching">
     <t>
       DNS records have Time To Live (TTL) parameters, and DNSSEC
       signatures have validity periods (specifically signature expiration
-      times). After the TLS server constructs the serialized validation
+      times). After the TLS server constructs the serialized authentication
       chain, it can cache and reuse it in multiple TLS connection
       handshakes. However, it should keep track of the TTLs and signature
-      validity periods and requery the records and rebuild the validation
+      validity periods and requery the records and rebuild the authentication
       chain as needed. A server implementation could carefully track
       these parameters and requery the chain correspondingly. Alternatively, 
       it could be configured to rebuild the chain at some predefined periodic
@@ -363,11 +362,11 @@
   </section>
 
 
-  <section title="Validataion" anchor="sec_verification">
+  <section title="Verification" anchor="sec_verification">
 
     <t>
       A TLS client making use of this specification, and
-      which receives a DNSSEC validation chain extension
+      which receives a DNSSEC authentication chain extension
       from a server, SHOULD use this information to perform
       DANE authentication of the server certificate.  In
       order to do this, it uses the mechanism specified by
