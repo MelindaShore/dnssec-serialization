@@ -143,16 +143,20 @@
     </t>
 
     <t>
-      This specification takes off from Adam Langley's
-      proposal for serializing DNSSEC validation chains
-      <xref target="AGL" /> and it incorporates some ideas and text.  It
-      modifies the approach by using DNS wire formats and
-      assumes that in implementation, the serialized DNSSEC
-      object will be prepared by a DNS-specific module and
-      the validation actions on serialized DNSSEC will also
-      be carried out by a DNS-specific module.  An appendix
-      (empty in the 00 version) provides a Python code
-      example of interfacing with a DNS-specific module.
+      This specification is based on Adam Langley's earlier proposal for
+      serializing DNSSEC validation chains [AGL]. It takes the principal
+      idea of that proposal but modifies the implementation in a few ways. 
+      It uses a TLS extension rather than stapling the chain into an X.509
+      certificate. It uses a sequence of wire format DNS records instead 
+      of a custom serialization format. It refers more extensively to 
+      normative DNSSEC protocol documents for descriptions of how to perform
+      DNSSEC validation rather than describing a validation algorithm in
+      the document itself, which runs the risk of diverging later from the
+      normative way. This new approach makes is easier for implementers to
+      use DNS specific libraries to implement these functions, reducing
+      the possibilities of implementation errors. An appendix 
+      (empty in the 00 version) provides a Python code example of interfacing 
+      with a DNS-specific module to perform these tasks.
     </t>
 
   </section> <!-- introduction -->
