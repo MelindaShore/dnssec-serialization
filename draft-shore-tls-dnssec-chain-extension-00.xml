@@ -34,7 +34,7 @@
 
 <front>
   <title abbrev="TLS DNSSEC Chain Extension">
-    A DNSSEC and DANE Record Chain Extension for TLS
+    A DNSSEC and DANE Record Validation Chain Extension for TLS
   </title>
   <author fullname="Melinda Shore" initials="M"
           surname="Shore">
@@ -188,10 +188,10 @@
     
     </section> <!-- protocol -->
 
-    <section title="DNSSEC Chain Data">
+    <section title="DNSSEC Validation Chain Data">
 
       <t>
-	The "chain_data" field of the "dnssec_chain" extension 
+	The "validation_data" field of the "dnssec_chain" extension 
 	is defined as an opaque TLS data structure, composed of 
 	a sequence of uncompressed wire format DNS records.
       </t>
@@ -205,12 +205,12 @@
         <artwork>
           struct {
               uint16 version;
-              opaque chain_data&lt;0..2^16-1&gt;;
-          } DNSSEC_Chain
+              opaque validation_data&lt;0..2^16-1&gt;;
+          } ValidationChain
         </artwork>
       </figure>
       
-      <t>The internal structure of the chain_data field is
+      <t>The internal structure of the validation_data field is
         opaque to TLS and will be handed off to a DNSSEC validator
         intact.  It will consist of a sequence of:</t>
 
@@ -249,7 +249,7 @@
 
   </section> <!-- dnssec validation chain extension -->
 
-  <section title="Construction of Serialized DNSSEC Chains">
+  <section title="Construction of Serialized Validation Chains">
 
     <t>
       This section describes a possible procedure for the
@@ -326,12 +326,12 @@
   </section> <!-- construction -->
 
 
-  <section title="Caching and Regeneration of the DNSSEC Chain"
+  <section title="Caching and Regeneration of the Validation Chain"
 	   anchor="sec_caching">
     <t>
       DNS records have Time To Live (TTL) parameters, and DNSSEC
       signatures have validity periods (inception and expiration
-      times). After the TLS server constructs the serialized DNSSEC
+      times). After the TLS server constructs the serialized validation
       chain, it SHOULD cache and reuse it in multiple TLS connection
       handshakes. However, it should keep track of the TTLs and signature
       validity periods and requery the records and rebuild the validation
@@ -410,7 +410,9 @@
       caching and for maintaining very good clock
       synchronization on the client are quite important for
       avoiding risks of replay or of use of revoked
-      certificates.
+      certificates. The DNSSEC chain is transmitted in the 
+      clear in the TLS handshake, and must be validated by
+      the client as described in Section X.
     </t>
 
   </section>
