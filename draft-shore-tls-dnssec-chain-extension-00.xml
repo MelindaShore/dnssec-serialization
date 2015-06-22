@@ -66,7 +66,7 @@
   <workgroup>TLS</workgroup>
   <abstract>
     <t>
-      This draft describes a new TLS v1.2 extension for
+      This draft describes a new TLS extension for
       transport of a DNS record serialized with the DNSSEC
       signatures needed to authenticate that record.  The
       intent of this proposal is to allow TLS clients to
@@ -91,7 +91,7 @@
   <section title="Introduction">
     <t>
       This draft describes a new <xref target="RFC5246">TLS
-      v1.2</xref> <xref target="RFC6066">extension</xref>
+      </xref> extension
       for transport of a DNS record serialized with the
       <xref target="RFC4034">DNSSEC signatures</xref> needed
       to authenticate that record.  The intent of this
@@ -173,8 +173,8 @@
       in the extended ServerHello message, using the format
       described below.  If a server is unable to return a
       authentication chain, or does not wish to return a
-      authentication chain, it returns an empty dnssec_chain
-      structure.  As with all TLS extensions, if the server
+      authentication chain, it does not include a dnssec_chain
+      extension.  As with all TLS extensions, if the server
       does not support this extension it will not return any
       authentication chain.
     </t>
@@ -273,25 +273,22 @@
     </t>
 
     <t>
-      The domain name of the server SHOULD be that included in
+      The domain name of the server MUST be that included in
       the TLS Server Name Indication extension
       <xref target="RFC6066" /> when present. If the Server Name 
       Indication extension is not present, or if the server does not 
       recognize the provided name and wishes to proceed with the handshake 
       rather than aborting the connection, the server uses the
       domain name associated with the server IP address that the TLS
-      connection arrives on. [Question: to simplify, we could mandate 
-      the use of SNI as a precondition to using this extension. Almost
-      all modern TLS clients use SNI, so this should not be a big issue.]
+      connection arrives on.
     </t>
 
     <t>
       The TLSA record to be queried is constructed by prepending
       the _port and _transport labels to the domain name as described
       in <xref target="RFC6698" />, where port is the port number
-      associated with the TLS server, and transport is usually "tcp"
-      for TLS servers. [Question: does this specification permit use
-      by DTLS servers too?]
+      associated with the TLS server.  The transport is "tcp"
+      for TLS servers, and "udp" for DTLS servers.
     </t>
 
     <t>
@@ -323,14 +320,6 @@
       domain names only.
     </t>
     <t>
-      [Question: (for the future): should we consider the use of
-      traditional compression algorithms like those used by gzip,
-      bzip2, xz, etc, rather than contemplating a new label
-      compression scheme for a serialized chain? This probably
-      needs an evaluation first of how compressible wire form
-      domain names are using those algorithms.]
-    </t>
-    <t>
       If the server acts as its own full iterative DNS resolver, 
       it can just build the chain as it performs normal iterative 
       resolution of the target record. If the server uses a 
@@ -338,8 +327,7 @@
       it employs a slightly modified lookup algorithm. The modified
       algorithm starts at the trust anchor, gradually prepends additional
       labels and looks for NS, DS, and DNSKEY records, until it 
-      reaches the target name. [SPELL OUT MORE PRECISE DETAILS HERE, OR 
-      PROVIDE AN ALGORITHM IN AN APPENDIX?]
+      reaches the target name.
     </t>
 
   </section> <!-- construction -->
@@ -371,12 +359,14 @@
       DANE authentication of the server certificate.  In
       order to do this, it uses the mechanism specified by
       the <xref target="RFC4035">DNSSEC protocol</xref>.
-      This mechanism is typically implemented in a DNSSEC
-      validation engine or library.  If the record is
+      This mechanism is sometimes implemented in a DNSSEC
+      validation engine or library.
+    </t>
+    <t>
+      If the record is
       correctly authenticated, the client then performs DANE
       authentication according to the
       <xref target="RFC6698">DANE TLS protocol</xref>.
-      [More details needed?]
     </t>
 
   </section> <!-- verification -->
@@ -398,7 +388,7 @@
       periodically checking whether it has changed.
     </t>
 
-  </section>
+  </section> <!-- trust anchor maintenance  -->
 
   <section title="Security Considerations">
 
