@@ -264,12 +264,14 @@
     </t>
 
     <t>
-      The domain name of the server MUST be that included in
+      The domain name of the server SHOULD be that included in
       the TLS Server Name Indication extension
-      <xref target="RFC6066" /> from the client, assuming the
-      server recognizes that name as one if its own. If the Server
-      Name Indication is not present, this extension MUST NOT be
-      used.
+      <xref target="RFC6066" /> when present. If the Server Name 
+      Indication extension is not present, or if the server does not 
+      recognize the provided name and wishes to proceed with the handshake 
+      rather than aborting the connection, the server uses the
+      domain name associated with the server IP address that the TLS
+      connection arrives on.
     </t>
 
     <t>
