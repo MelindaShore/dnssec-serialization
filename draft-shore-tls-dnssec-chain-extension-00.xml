@@ -34,7 +34,7 @@
 
 <front>
   <title abbrev="TLS DNSSEC Chain Extension">
-    A DNSSEC and DANE Record Validation Chain Extension for TLS
+    A DNSSEC and DANE Record Chain Extension for TLS
   </title>
   <author fullname="Melinda Shore" initials="M"
           surname="Shore">
@@ -157,7 +157,7 @@
 
   </section> <!-- introduction -->
 
-  <section title="DNSSEC Validation Chain Extension">
+  <section title="DNSSEC Chain Extension">
     <section title="Protocol">
 
     <t>
@@ -188,51 +188,47 @@
     
     </section> <!-- protocol -->
 
-    <section title="DNSSEC Validation Chain Data">
+    <section title="DNSSEC Chain Data">
 
       <t>
-	    The "valiation_data" field of the "dnssec_chain"
-	    extension contains a sequence of uncompressed
-	    wire format DNS records.
+	The "chain_data" field of the "dnssec_chain" extension 
+	is defined as an opaque TLS data structure, composed of 
+	a sequence of uncompressed wire format DNS records.
       </t>
 
-      <t>The validation chain is here a TLS data structure that
-        treats the entire validation chain as a single opaque binary
-        blob.</t>
+      <t>
+	The "version" field of is set to 1 in the chain data format
+	described by this document.
+      </t>
 
       <figure>
         <artwork>
-
-
           struct {
               uint16 version;
-              opaque validation_data&lt;0..2^16-1&gt;;
-          } ValidationChain
-
+              opaque chain_data&lt;0..2^16-1&gt;;
+          } DNSSEC_Chain
         </artwork>
       </figure>
       
-
-      <t>The internal structure of a validation_data blob is
-        opaque to TLS and will be handed off to a validator
+      <t>The internal structure of the chain_data field is
+        opaque to TLS and will be handed off to a DNSSEC validator
         intact.  It will consist of a sequence of:</t>
 
       <figure>
         <artwork>
-
           Trust anchor DNSKEY, RRSIG(Trust anchor DNSKEY)
-          * For every intervening delegation:
-          DS, RRSIG(DS)
-          DNSKEY, RRSIG(DNSKEY)
+          For every intervening delegation:
+              DS, RRSIG(DS)
+              DNSKEY, RRSIG(DNSKEY)
           TLSA, RRSIG(TLSA)
-
         </artwork>
       </figure>
 
       <t>For example, for the HTTPS server at
         www.example.com, where there are zone cuts at "com."
-        and "example.com.", we might get the following
-        record sets, each with accompanying RRSIGs:</t>
+        and "example.com.", the chain_data field would have the
+	the following record sets, each with accompanying RRSIG
+        records:</t>
 
       <figure>
         <artwork>
@@ -249,17 +245,11 @@
         return already, like the validation_chain function in
         getdns]</t>
 
-
-      <t>
-        MORE DESCRIPTION TO BE FILLED IN.
-      </t>
-      
     </section> <!-- validation chain data -->
 
   </section> <!-- dnssec validation chain extension -->
 
-  <section title="Construction of Serialized Validation
-                  Chains">
+  <section title="Construction of Serialized DNSSEC Chains">
 
     <t>
       This section describes a possible procedure for the
@@ -274,16 +264,12 @@
     </t>
 
     <t>
-      The domain name of the server SHOULD be that included in
+      The domain name of the server MUST be that included in
       the TLS Server Name Indication extension
-      <xref target="RFC6066" /> when present. If the Server Name 
-      Indication extension is not present, or if the server does not 
-      recognize the provided name and wishes to proceed with the handshake 
-      rather than aborting the connection, the server uses the
-      domain name associated with the server IP address that the TLS
-      connection arrives on. [Question: to simplify, we could mandate 
-      the use of SNI as a precondition to using this extension. Almost
-      all modern TLS clients use SNI, so this should not be a big issue.]
+      <xref target="RFC6066" /> from the client, assuming the
+      server recognizes that name as one if its own. If the Server
+      Name Indication is not present, this extension MUST NOT be
+      used.
     </t>
 
     <t>
@@ -317,42 +303,36 @@
       name or a list of trailing labels with a pointer to a prior 
       occurrence of the same name in the DNS packet. In the
       construction of the validation chain, DNS records MUST be
-      uncompressed. Note: A future version of this specification may
-      outline a method to compress domain names in the validation
-      chain (by employing similar pointers to previous locations)
-      to save space, but the current specification uses uncompressed
-      domain names only.
+      uncompressed.
     </t>
     <t>
-      [Question: (for the future): should we consider the use of
-      traditional compression algorithms like those used by gzip,
-      bzip2, xz, etc, rather than contemplating a new label
-      compression scheme for a serialized chain? This probably
-      needs an evaluation first of how compressible wire form
-      domain names are using those algorithms.]
+      (Note: A future version of this specification may describe
+      a new format of the chain data with a new version number
+      that employs a compression or optimization scheme to reduce 
+      the size of the chain.)
     </t>
     <t>
       If the server acts as its own full iterative DNS resolver, 
-      it can just build the chain as it performs normal iterative 
+      it can build the chain as it performs normal iterative 
       resolution of the target record. If the server uses a 
       recursive server (which is expected to be a more common case),
       it employs a slightly modified lookup algorithm. The modified
       algorithm starts at the trust anchor, gradually prepends additional
-      labels and looks for NS, DS, and DNSKEY records, until it 
-      reaches the target name. [SPELL OUT MORE PRECISE DETAILS HERE, OR 
-      PROVIDE AN ALGORITHM IN AN APPENDIX?]
+      labels and looks for DS, and DNSKEY records, until it reaches the 
+      target name. Alternatively, it could start at the target name
+      and walk upwards to the root, gradually stripping labels.
     </t>
 
   </section> <!-- construction -->
 
 
-  <section title="Caching and Regeneration of the Validation Chain"
+  <section title="Caching and Regeneration of the DNSSEC Chain"
 	   anchor="sec_caching">
     <t>
       DNS records have Time To Live (TTL) parameters, and DNSSEC
-      signatures have validity periods (specifically signature expiration
-      times). After the TLS server constructs the serialized validation
-      chain, it can cache and reuse it in multiple TLS connection
+      signatures have validity periods (inception and expiration
+      times). After the TLS server constructs the serialized DNSSEC
+      chain, it SHOULD cache and reuse it in multiple TLS connection
       handshakes. However, it should keep track of the TTLs and signature
       validity periods and requery the records and rebuild the validation
       chain as needed. A server implementation could carefully track
@@ -363,24 +343,23 @@
   </section>
 
 
-  <section title="Validataion" anchor="sec_verification">
+  <section title="Validation of the Chain" anchor="sec_validation">
 
     <t>
-      A TLS client making use of this specification, and
-      which receives a DNSSEC validation chain extension
-      from a server, SHOULD use this information to perform
-      DANE authentication of the server certificate.  In
-      order to do this, it uses the mechanism specified by
-      the <xref target="RFC4035">DNSSEC protocol</xref>.
-      This mechanism is typically implemented in a DNSSEC
-      validation engine or library.  If the record is
-      correctly authenticated, the client then performs DANE
-      authentication according to the
+      A TLS client making use of this specification, MUST have
+      a DNSSEC trust anchor configured, which is usually the DNS root
+      key. It MUST use the trust anchor to perform DNSSEC validation 
+      of the received chain. The DNSSEC validation process is specified 
+      in the <xref target="RFC4035">DNSSEC protocol</xref>. This mechanism 
+      is typically implemented in a DNSSEC validation engine or library.  
+      If the chain is correctly authenticated, the client then performs 
+      DANE authentication of the server certificate according to the
       <xref target="RFC6698">DANE TLS protocol</xref>.
-      [More details needed?]
+      [Are more details needed, or is referring to the DNSSEC
+      and DANE RFCs sufficient?]
     </t>
 
-  </section> <!-- verification -->
+  </section> <!-- validation -->
 
 
   <section title="Trust Anchor Maintenance" anchor="sec_trustmaint">
@@ -395,8 +374,8 @@
       to keep their trust anchors updated. Some operating systems may 
       have a system-wide service to maintain and keep up-to-date the 
       root trust anchor.  It may be possible for the TLS client 
-      application to simply reference that as its trust anchor,
-      periodically checking whether it has changed.
+      application to simply reference the system wide service as 
+      its trust anchor, periodically checking whether it has changed.
     </t>
 
   </section>
@@ -405,13 +384,9 @@
   <section title="Other Considerations" anchor="sec_other">
 
     <t>
-      [Does the accurate time issue belong in Security Considerations?]
-    </t>
-    <t>
-      DNSSEC signatures have validity periods defined by an inception
-      and expiration time. 
-      TLS clients need roughly accurate time in order to properly
-      authenticate these signatures. This could be achieved by running
+      Since DNSSEC signatures have validity periods, TLS clients need 
+      roughly accurate time in order to properly authenticate these 
+      signatures. This could be achieved by running
       a time synchronization protocol like NTP
       <xref target="RFC5905" /> or SNTP
       <xref target="RFC4330" />,
@@ -423,7 +398,8 @@
 
   <section title="Security Considerations">
 
-    <t> The security considerations of the normatively
+    <t>
+      The security considerations of the normatively
       referenced RFCs (1035, 4034, 4035, 5246, 6066, 6698)
       all pertain to this extension.  As mentioned above,
       there are particular security pitfalls in creating and
@@ -434,15 +410,8 @@
       caching and for maintaining very good clock
       synchronization on the client are quite important for
       avoiding risks of replay or of use of revoked
-      certificates.  Other residual risks of this
-      specification include locating the validation function
-      in the server rather than in the client.  This might
-      seem reasonable on the face of it, but because the
-      DNSSEC serialization is sent in the clear in the
-      client hello, it could be tampered with and the
-      certificate fingerprint or full certificate (depending
-      on the mode) should not be used without performing the
-      DNSSEC validation (in the DNS-specific module.</t>
+      certificates.
+    </t>
 
   </section>
 
@@ -469,7 +438,7 @@
   <section title="Test Vectors">
 
     <t>
-      [TO BE ADDED LATER. THE ORIGINAL CONTENT WAS OBSOLETE.]
+      [TO BE ADDED LATER.]
     </t>
 
   </section> <!-- test vectors -->
@@ -484,6 +453,7 @@
     &rfc2119;
     &rfc4034;
     &rfc4035;
+    &rfc5011;
     &rfc5246;
     &rfc6066;
     &rfc6698;
@@ -491,7 +461,6 @@
 
   <references title="Informative References">
     &rfc4330;
-    &rfc5011;
     &rfc5905;
     &rfc7120;
     <reference anchor="AGL"
