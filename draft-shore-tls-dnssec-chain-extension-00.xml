@@ -97,7 +97,7 @@
       to authenticate that record.  The intent of this
       proposal is to allow TLS clients to perform <xref
       target="RFC6698">DANE authentication</xref> of a TLS
-      server certificate without performing perform
+      server certificate without performing
       additional DNS record lookups and incurring the
       associated latency penalty. It also provides the
       ability to avoid potential problems with TLS clients
@@ -356,9 +356,9 @@
       is typically implemented in a DNSSEC validation engine or library.  
       If the chain is correctly authenticated, the client then performs 
       DANE authentication of the server certificate according to the
-      <xref target="RFC6698">DANE TLS protocol</xref>.
-      [Are more details needed, or is referring to the DNSSEC
-      and DANE RFCs sufficient?]
+      <xref target="RFC6698">DANE TLS protocol</xref>. A TLS client
+      MUST NOT cache and reuse the contents of any received dnssec_chain
+      extension for subsequent TLS connections.
     </t>
 
   </section> <!-- validation -->
@@ -407,14 +407,17 @@
       there are particular security pitfalls in creating and
       using this serialization because it has very different
       temporal qualities from the usual certificate that
-      would be validated.  So the requirements
-      in <xref target="sec_caching">Section 6</xref> for not
-      caching and for maintaining very good clock
-      synchronization on the client are quite important for
-      avoiding risks of replay or of use of revoked
-      certificates. The DNSSEC chain is transmitted in the 
-      clear in the TLS handshake, and must be validated by
-      the client as described in Section X.
+      would be validated. So the requirements in 
+      <xref target="sec_validation" /> of the client not caching 
+      the chain, in <xref target="sec_caching" /> of the server 
+      caching but rebuilding the chain afresh as TTLs and 
+      signature validity periods expire, and in 
+      <xref target="sec_other" /> of maintaining good clock 
+      synchronization on the client are quite important for 
+      avoiding risks of replay or of use of revoked certificates.
+      The DNSSEC chain is transmitted in the clear in the TLS 
+      handshake, and must be validated by the client as described 
+      in <xref target="sec_validation" />.
     </t>
 
   </section>
