@@ -143,10 +143,11 @@
     </t>
 
     <t>
-      This specification takes off from Adam Langley's
+      This specification is based on Adam Langley's original
       proposal for serializing DNSSEC authentication chains
-      <xref target="AGL" /> and it incorporates some ideas and text.  It
-      modifies the approach by using DNS wire formats and
+      <xref target="AGL" /> and it incorporates his ideas
+      and some of his text.  It
+      modifies his approach by using DNS wire formats and
       assumes that in implementation, the serialized DNSSEC
       object will be prepared by a DNS-specific module and
       the validation actions on serialized DNSSEC will also
@@ -450,10 +451,12 @@
   <section title="Acknowledgments">
     <t>
       Many thanks to Adam Langley for laying the groundwork
-      for this extension. This document also benefited from
-      discussions with and review from the following people:
-      Allison Mankin, Duane Wessels, Willem Toorop, Jeff
-      Hodges, and Gowri Visweswaran.
+      for this extension. The original idea is his but our
+      acknowledgment in no way implies his endorsement.
+      This document also benefited from discussions with and
+      review from the following people: Allison Mankin,
+      Duane Wessels, Willem Toorop, Jeff Hodges, and Gowri
+      Visweswaran.
     </t>
   </section>
 
