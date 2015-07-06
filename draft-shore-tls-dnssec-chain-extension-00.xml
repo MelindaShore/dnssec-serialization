@@ -345,7 +345,8 @@
       chain as needed. A server implementation could carefully track
       these parameters and requery the chain correspondingly. Alternatively, 
       it could be configured to rebuild the chain at some predefined periodic
-      intervals.
+      interval that does not exceed the DNS TTLs or signature validity
+      periods of the component records in the chain.
     </t>
   </section>
 
