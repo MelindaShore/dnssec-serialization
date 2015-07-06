@@ -11,6 +11,7 @@
 <!ENTITY rfc6066 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6066.xml">
 <!ENTITY rfc6698 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6698.xml">
 <!ENTITY rfc7120 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7120.xml">
+<!ENTITY rfc7435 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7435.xml">
 ]>
 
 <!-- To do: -->
@@ -67,8 +68,8 @@
   <abstract>
     <t>
       This draft describes a new TLS extension for
-      transport of a DNS record serialized with the DNSSEC
-      signatures needed to authenticate that record.  The
+      transport of a DNS record set serialized with the DNSSEC
+      signatures needed to authenticate that record set.  The
       intent of this proposal is to allow TLS clients to
       perform DANE authentication of a TLS server
       certificate without needing to perform additional DNS
@@ -92,9 +93,9 @@
     <t>
       This draft describes a new <xref target="RFC5246">TLS
       </xref> extension
-      for transport of a DNS record serialized with the
+      for transport of a DNS record set serialized with the
       <xref target="RFC4034">DNSSEC signatures</xref> needed
-      to authenticate that record.  The intent of this
+      to authenticate that record set.  The intent of this
       proposal is to allow TLS clients to perform <xref
       target="RFC6698">DANE authentication</xref> of a TLS
       server certificate without performing perform
@@ -122,10 +123,12 @@
       extra DNS lookup latency, are on servers where it is
       easier to provision a validating resolver, and are
       less likely to experience traffic interference from
-      misconfigured middleboxes. Hence <xref
-      target="DANESMTP">DANE authentication of SMTP
-      MTAs</xref> is not likely to gain much advantage from
-      this mechanism.
+      misconfigured middleboxes. Furthermore, SMTP MTAs usually
+      employ <xref target="DANESMTP">Opportunistic Security</xref>,
+      in which the presence of the DNS TLSA records is used to determine
+      whether to enforce an authenticated TLS connection.
+      Hence <xref target="DANESMTP">DANE authentication of SMTP
+      MTAs</xref> should not use this mechanism.
     </t>
 
     <t>
@@ -169,6 +172,15 @@
     </t>
 
     <t>
+      [Placeholder: an upcoming revision of this
+      specification will support the ability for the client
+      to include a set of unexpired cached records it
+      possesses, and correspondingly allow the server to
+      return an authentication chain with those records
+      omitted.]
+    </t>
+
+    <t>
       Servers receiving a "dnssec_chain" extension in the
       client hello SHOULD return a serialized authentication chain
       in the extended ServerHello message, using the format
@@ -202,7 +214,6 @@
           } RRset
 
           RRset AuthenticationChain&lt;0..2^16-1&gt;;
-
         </artwork>
       </figure>
 
@@ -221,7 +232,6 @@
           signature = sign(RRSIG_RDATA | RR(1) | RR(2)... )
 
           RR(i) = owner | type | class | TTL | RDATA length | RDATA
-
         </artwork>
       </figure>
 
@@ -253,25 +263,27 @@
 
       <t>For example, for an HTTPS server at
         www.example.com, where there are zone cuts at "com."
-        and "example.com.", we might get the following
-        RRsets:</t>
+        and "example.com.", the AuthenticationChain structure would
+	comprise the following RRsets (and their corresponding
+	RRSIG signatures):</t>
 
       <figure>
         <artwork>
-          . DNSKEY
-          com. DS
-          com. DNSKEY
-          example.com. DS
-          example.com. DNSKEY
+
           _443._tcp.www.example.com. TLSA
+          example.com. DNSKEY
+          example.com. DS
+          com. DNSKEY
+          com. DS
+          . DNSKEY
         </artwork>
       </figure>
 
-      <t>Obviously, an authentication chain will be most compact and
-        easiest to verify if each RRset has a single record, i.e., if
-        there is a single DNSKEY RR and a single DS RR at each step.  In
-        addition, as suggested above, keeping zone cuts to a minimum also
-        reduces the length of the authentication chain.
+      <t>
+        [Some names involving CNAME and DNAMEs may involve multiple
+        branches of the DNS tree. The authors are contemplating
+        enhancements to the AuthenticationChain structure to accommodate
+        these for a future revision of the draft.]
       </t>
 
     </section> <!-- authentication chain data -->
@@ -287,8 +299,8 @@
 
     <t>When the goal is to perform DANE authentication 
        <xref target="RFC6698" /> of the 
-       server's X.509 certificate, the DNS record to be
-       serialized is a TLSA record corresponding to the 
+       server's X.509 certificate, the DNS record set to be
+       serialized is a TLSA record set corresponding to the 
        server's domain name.
     </t>
 
@@ -313,22 +325,10 @@
 
     <t>
       The components of the authentication chain are built by
-      starting at the trust anchor DNSKEY (usually expected to be
-      the DNS root trust anchor) and its corresponding RRSIG 
-      signature record, and then for each intervening zone cut, 
-      adding the DS record and DNSKEY RRsets and their RRSIGs, and 
-      finally the target TLSA record and RRSIG.  (As required above,
-      however, the serialized authentication chain will present the
-      RRsets in the opposite order.)
-    </t>
-    <t>
-      If the server acts as its own full iterative DNS resolver, 
-      it can just build the chain as it performs normal iterative 
-      resolution of the target record. If the server uses a 
-      recursive resolver, it employs a slightly modified lookup
-      algorithm, starting at the trust anchor, prepending
-      additional labels, and looking for NS, DS, and DNSKEY records, 
-      until it reaches the target name.
+      starting at the target record and its corresponding RRSIG.
+      Then traversing the DNS tree upwards towards the trust anchor
+      zone (normally the DNS root), for each zone cut, the DS and
+      DNSKEY RRsets and their signatures are added.
     </t>
     <t>
       In order to meet the formatting requirements above, the server
@@ -354,7 +354,8 @@
       chain as needed. A server implementation could carefully track
       these parameters and requery the chain correspondingly. Alternatively, 
       it could be configured to rebuild the chain at some predefined periodic
-      intervals.
+      interval that does not exceed the DNS TTLs or signature validity
+      periods of the component records in the chain.
     </t>
   </section>
 
@@ -375,10 +376,12 @@
     <!-- TODO: Add a precis of the algorithm here -->
 
     <t>
-      If the record is
-      correctly authenticated, the client then performs DANE
-      authentication according to the
-      <xref target="RFC6698">DANE TLS protocol</xref>.
+      If the authentication chain is 
+      correctly verified, the client then performs DANE
+      authentication of the server according to the
+      <xref target="RFC6698">DANE TLS protocol</xref>, 
+      and the additional protocol requirements outlined
+      in <xref target="DANEOPS" />.
     </t>
 
   </section> <!-- verification -->
@@ -387,8 +390,8 @@
   <section title="Trust Anchor Maintenance" anchor="sec_trustmaint">
 
     <t>
-      The trust anchor may change periodically, e.g. due to a
-      key rollover event by the operator of the initial zone. Managed 
+      The trust anchor may change periodically, e.g. when the operator
+      of the trust anchor zone performs a DNSSEC key rollover. Managed 
       key rollovers typically use a process that can be tracked by 
       verifiers allowing them to automatically update their trust 
       anchors, as described in <xref target="RFC5011" />. TLS clients 
@@ -406,34 +409,19 @@
 
     <t> The security considerations of the normatively
       referenced RFCs (1035, 4034, 4035, 5246, 6066, 6698)
-      all pertain to this extension.  As mentioned above,
-      there are particular security pitfalls in creating and
-      using this serialization because it has very different
-      temporal qualities from the usual certificate that
-      would be validated.  So the requirements
-      in <xref target="sec_caching">Section 6</xref> for not
-      caching and for maintaining very good clock
-      synchronization on the client are quite important for
-      avoiding risks of replay or of use of revoked
-      certificates.  Other residual risks of this
-      specification include locating the validation function
-      in the server rather than in the client.  This might
-      seem reasonable on the face of it, but because the
-      DNSSEC serialization is sent in the clear in the
-      client hello, it could be tampered with and the
-      certificate fingerprint or full certificate (depending
-      on the mode) should not be used without performing the
-      DNSSEC validation (in the DNS-specific module.</t>
-
-    <t>
-      DNSSEC signatures have validity periods defined by an inception
-      and expiration time. 
+      all pertain to this extension. Since the server is
+      delivering a chain of DNS records and signatures to
+      the client, it must take care to rebuild the chain
+      in accordance with TTL and signature expiration of
+      the chain components as described in <xref target="sec_caching" />.
       TLS clients need roughly accurate time in order to properly
       authenticate these signatures. This could be achieved by running
       a time synchronization protocol like NTP
       <xref target="RFC5905" /> or SNTP
       <xref target="RFC4330" />,
-      which are already widely used today.
+      which are already widely used today. TLS clients must
+      support a mechanism to track and rollover the trust anchor
+      key as described in <xref target="sec_trustmaint" />.
     </t>
 
   </section>
@@ -488,6 +476,7 @@
     &rfc5011;
     &rfc5905;
     &rfc7120;
+    &rfc7435;
     <reference anchor="AGL"
                target="https://tools.ietf.org/id/draft-agl-dane-serializechain-01.txt">
       <front>
@@ -504,6 +493,13 @@
         <title>SMTP Security via opportunistic DANE TLS</title>
         <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
         <author fullname="Wes Hardaker" initials="W" surname="Hardaker" />
+      </front>
+    </reference>
+    <reference anchor="DANEOPS"
+      target="https://tools.ietf.org/html/draft-ietf-dane-ops">
+      <front>
+        <title>Updates to and Operational Guidance for the DANE Protocol</title>
+        <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
       </front>
     </reference>
   </references>
