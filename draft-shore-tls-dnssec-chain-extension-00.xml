@@ -11,6 +11,7 @@
 <!ENTITY rfc6066 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6066.xml">
 <!ENTITY rfc6698 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6698.xml">
 <!ENTITY rfc7120 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7120.xml">
+<!ENTITY rfc7435 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7435.xml">
 ]>
 
 <!-- To do: -->
@@ -67,8 +68,8 @@
   <abstract>
     <t>
       This draft describes a new TLS extension for
-      transport of a DNS record serialized with the DNSSEC
-      signatures needed to authenticate that record.  The
+      transport of a DNS record set serialized with the DNSSEC
+      signatures needed to authenticate that record set.  The
       intent of this proposal is to allow TLS clients to
       perform DANE authentication of a TLS server
       certificate without needing to perform additional DNS
@@ -92,9 +93,9 @@
     <t>
       This draft describes a new <xref target="RFC5246">TLS
       </xref> extension
-      for transport of a DNS record serialized with the
+      for transport of a DNS record set serialized with the
       <xref target="RFC4034">DNSSEC signatures</xref> needed
-      to authenticate that record.  The intent of this
+      to authenticate that record set.  The intent of this
       proposal is to allow TLS clients to perform <xref
       target="RFC6698">DANE authentication</xref> of a TLS
       server certificate without performing perform
@@ -490,6 +491,7 @@
     &rfc5011;
     &rfc5905;
     &rfc7120;
+    &rfc7435;
     <reference anchor="AGL"
                target="https://tools.ietf.org/id/draft-agl-dane-serializechain-01.txt">
       <front>
