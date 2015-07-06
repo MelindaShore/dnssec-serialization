@@ -205,7 +205,6 @@
           } RRset
 
           RRset AuthenticationChain&lt;0..2^16-1&gt;;
-
         </artwork>
       </figure>
 
@@ -224,7 +223,6 @@
           signature = sign(RRSIG_RDATA | RR(1) | RR(2)... )
 
           RR(i) = owner | type | class | TTL | RDATA length | RDATA
-
         </artwork>
       </figure>
 
@@ -256,25 +254,27 @@
 
       <t>For example, for an HTTPS server at
         www.example.com, where there are zone cuts at "com."
-        and "example.com.", we might get the following
-        RRsets:</t>
+        and "example.com.", the AuthenticationChain structure would
+	comprise the following RRsets (and their corresponding
+	RRSIG signatures):</t>
 
       <figure>
         <artwork>
-          . DNSKEY
-          com. DS
-          com. DNSKEY
-          example.com. DS
-          example.com. DNSKEY
+
           _443._tcp.www.example.com. TLSA
+          example.com. DNSKEY
+          example.com. DS
+          com. DNSKEY
+          com. DS
+          . DNSKEY
         </artwork>
       </figure>
 
-      <t>Obviously, an authentication chain will be most compact and
-        easiest to verify if each RRset has a single record, i.e., if
-        there is a single DNSKEY RR and a single DS RR at each step.  In
-        addition, as suggested above, keeping zone cuts to a minimum also
-        reduces the length of the authentication chain.
+      <t>
+        [Some names involving CNAME and DNAMEs may involve multiple
+        branches of the DNS tree. The authors are contemplating
+        enhancements to the AuthenticationChain structure to accommodate
+        these for a future revision of the draft.]
       </t>
 
     </section> <!-- authentication chain data -->
@@ -290,8 +290,8 @@
 
     <t>When the goal is to perform DANE authentication 
        <xref target="RFC6698" /> of the 
-       server's X.509 certificate, the DNS record to be
-       serialized is a TLSA record corresponding to the 
+       server's X.509 certificate, the DNS record set to be
+       serialized is a TLSA record set corresponding to the 
        server's domain name.
     </t>
 
@@ -316,22 +316,10 @@
 
     <t>
       The components of the authentication chain are built by
-      starting at the trust anchor DNSKEY (usually expected to be
-      the DNS root trust anchor) and its corresponding RRSIG 
-      signature record, and then for each intervening zone cut, 
-      adding the DS record and DNSKEY RRsets and their RRSIGs, and 
-      finally the target TLSA record and RRSIG.  (As required above,
-      however, the serialized authentication chain will present the
-      RRsets in the opposite order.)
-    </t>
-    <t>
-      If the server acts as its own full iterative DNS resolver, 
-      it can just build the chain as it performs normal iterative 
-      resolution of the target record. If the server uses a 
-      recursive resolver, it employs a slightly modified lookup
-      algorithm, starting at the trust anchor, prepending
-      additional labels, and looking for NS, DS, and DNSKEY records, 
-      until it reaches the target name.
+      starting at the target record and its corresponding RRSIG.
+      Then traversing the DNS tree upwards towards the trust anchor
+      zone (normally the DNS root), for each zone cut, the DS and
+      DNSKEY RRsets and their signatures are added.
     </t>
     <t>
       In order to meet the formatting requirements above, the server
@@ -378,9 +366,9 @@
     <!-- TODO: Add a precis of the algorithm here -->
 
     <t>
-      If the record is
-      correctly authenticated, the client then performs DANE
-      authentication according to the
+      If the authentication chain is 
+      correctly verified, the client then performs DANE
+      authentication of the server according to the
       <xref target="RFC6698">DANE TLS protocol</xref>.
     </t>
 
@@ -390,8 +378,8 @@
   <section title="Trust Anchor Maintenance" anchor="sec_trustmaint">
 
     <t>
-      The trust anchor may change periodically, e.g. due to a
-      key rollover event by the operator of the initial zone. Managed 
+      The trust anchor may change periodically, e.g. when the operator
+      of the trust anchor zone performs a DNSSEC key rollover. Managed 
       key rollovers typically use a process that can be tracked by 
       verifiers allowing them to automatically update their trust 
       anchors, as described in <xref target="RFC5011" />. TLS clients 
