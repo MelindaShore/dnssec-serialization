@@ -172,6 +172,15 @@
     </t>
 
     <t>
+      [Placeholder: an upcoming revision of this
+      specification will support the ability for the client
+      to include a set of unexpired cached records it
+      possesses, and correspondingly allow the server to
+      return an authentication chain with those records
+      omitted.]
+    </t>
+
+    <t>
       Servers receiving a "dnssec_chain" extension in the
       client hello SHOULD return a serialized authentication chain
       in the extended ServerHello message, using the format
@@ -370,7 +379,9 @@
       If the authentication chain is 
       correctly verified, the client then performs DANE
       authentication of the server according to the
-      <xref target="RFC6698">DANE TLS protocol</xref>.
+      <xref target="RFC6698">DANE TLS protocol</xref>, 
+      and the additional protocol requirements outlined
+      in <xref target="DANEOPS" />.
     </t>
 
   </section> <!-- verification -->
@@ -398,34 +409,19 @@
 
     <t> The security considerations of the normatively
       referenced RFCs (1035, 4034, 4035, 5246, 6066, 6698)
-      all pertain to this extension.  As mentioned above,
-      there are particular security pitfalls in creating and
-      using this serialization because it has very different
-      temporal qualities from the usual certificate that
-      would be validated.  So the requirements
-      in <xref target="sec_caching">Section 6</xref> for not
-      caching and for maintaining very good clock
-      synchronization on the client are quite important for
-      avoiding risks of replay or of use of revoked
-      certificates.  Other residual risks of this
-      specification include locating the validation function
-      in the server rather than in the client.  This might
-      seem reasonable on the face of it, but because the
-      DNSSEC serialization is sent in the clear in the
-      client hello, it could be tampered with and the
-      certificate fingerprint or full certificate (depending
-      on the mode) should not be used without performing the
-      DNSSEC validation (in the DNS-specific module.</t>
-
-    <t>
-      DNSSEC signatures have validity periods defined by an inception
-      and expiration time. 
+      all pertain to this extension. Since the server is
+      delivering a chain of DNS records and signatures to
+      the client, it must take care to rebuild the chain
+      in accordance with TTL and signature expiration of
+      the chain components as described in <xref target="sec_caching" />.
       TLS clients need roughly accurate time in order to properly
       authenticate these signatures. This could be achieved by running
       a time synchronization protocol like NTP
       <xref target="RFC5905" /> or SNTP
       <xref target="RFC4330" />,
-      which are already widely used today.
+      which are already widely used today. TLS clients must
+      support a mechanism to track and rollover the trust anchor
+      key as described in <xref target="sec_trustmaint" />.
     </t>
 
   </section>
@@ -497,6 +493,13 @@
         <title>SMTP Security via opportunistic DANE TLS</title>
         <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
         <author fullname="Wes Hardaker" initials="W" surname="Hardaker" />
+      </front>
+    </reference>
+    <reference anchor="DANEOPS"
+      target="https://tools.ietf.org/html/draft-ietf-dane-ops">
+      <front>
+        <title>Updates to and Operational Guidance for the DANE Protocol</title>
+        <author fullname="Viktor Dukhovni" initials="V" surname="Dukhovni" />
       </front>
     </reference>
   </references>
