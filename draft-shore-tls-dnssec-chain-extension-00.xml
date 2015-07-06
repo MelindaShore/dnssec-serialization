@@ -122,10 +122,12 @@
       extra DNS lookup latency, are on servers where it is
       easier to provision a validating resolver, and are
       less likely to experience traffic interference from
-      misconfigured middleboxes. Hence <xref
-      target="DANESMTP">DANE authentication of SMTP
-      MTAs</xref> is not likely to gain much advantage from
-      this mechanism.
+      misconfigured middleboxes. Furthermore, SMTP MTAs usually
+      employ <xref target="DANESMTP">Opportunistic Security</xref>,
+      in which the presence of the DNS TLSA records is used to determine
+      whether to enforce an authenticated TLS connection.
+      Hence <xref target="DANESMTP">DANE authentication of SMTP
+      MTAs</xref> should not use this mechanism.
     </t>
 
     <t>
