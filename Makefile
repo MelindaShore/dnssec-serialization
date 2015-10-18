@@ -1,5 +1,5 @@
 SOURCE  = \
-	draft-shore-tls-dnssec-chain-extension-00
+	draft-shore-tls-dnssec-chain-extension-02
 
 all:	$(SOURCE).txt $(SOURCE).html
 
