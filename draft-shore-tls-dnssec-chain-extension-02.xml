@@ -131,14 +131,14 @@
       applications. For example, SMTP MTAs are usually
       located in data centers, may tolerate
       extra DNS lookup latency, are on servers where it is
-      easier to provision a validating resolver, and are
+      easier to provision a validating resolver, or are
       less likely to experience traffic interference from
       misconfigured middleboxes. Furthermore, SMTP MTAs usually
       employ <xref target="RFC7435">Opportunistic Security</xref>,
       in which the presence of the DNS TLSA records is used to determine
       whether to enforce an authenticated TLS connection.
       Hence <xref target="RFC7672">DANE authentication of SMTP
-      MTAs</xref> should not use this mechanism.
+      MTAs</xref> will typically not use this mechanism.
     </t>
 
     <t>
@@ -158,15 +158,11 @@
     <t>
       This specification is based on Adam Langley's original
       proposal for serializing DNSSEC authentication chains
-      <xref target="AGL" /> and it incorporates his ideas
-      and some of his text.  It
-      modifies his approach by using DNS wire formats and
-      assumes that in implementation, the serialized DNSSEC
-      object will be prepared by a DNS-specific module and
-      the validation actions on serialized DNSSEC will also
-      be carried out by a DNS-specific module.  An appendix
-      will provide a Python code example of interfacing with 
-      a DNS-specific module.
+      and delivering them in an X.509 certificate extension
+      <xref target="AGL" />. It modifies the approach by using
+      wire format DNS records in the serialized data (assuming
+      that the data will be prepared and consumed by a DNS-specific
+      library), and by using a TLS extension to deliver the data.
     </t>
 
   </section> <!-- introduction -->
@@ -249,13 +245,15 @@
         <artwork>
 
           RR(i) = owner | type | class | TTL | RDATA length | RDATA
-
-	  RRs within the RRset are ordered canonically, by treating
-	  the RDATA portion of each RR as a left-justified unsigned 
-	  octet sequence in which the absence of an octet sorts before
-	  a zero octet.
         </artwork>
       </figure>
+
+      <t>
+	RRs within the RRset are ordered canonically, by treating
+	the RDATA portion of each RR as a left-justified unsigned 
+	octet sequence in which the absence of an octet sorts before
+	a zero octet.
+      </t>
 
       <t>
 	The RRsig record is in DNS wire format as described in 
@@ -268,12 +266,14 @@
         <artwork>
 
           signature = sign(RRSIG_RDATA | RR(1) | RR(2)... )
-
-	  where, RRSIG_RDATA is the wire format of the RRSIG RDATA
-	  fields with the Signer's Name field in canonical form and
-	  the signature field excluded.
         </artwork>
       </figure>
+
+      <t>
+	where, RRSIG_RDATA is the wire format of the RRSIG RDATA
+	fields with the Signer's Name field in canonical form and
+	the signature field excluded.
+      </t>
 
       <t>
         The first RRset in the chain MUST contain the DANE records being
@@ -281,7 +281,7 @@
         of DNSKEY and DS RRsets, starting with a DNSKEY RRset.  Each RRset
         MUST authenticate the preceding RRset:
         <list type="symbols">
-          <t>For a DNSKEY RRset, one of the covered DNSKEY RRs MUST be the
+          <t>A DNSKEY RRset must include the DNSKEY RR containing the
             public key used to verify the previous RRset.</t>
           <t>For a DS RRset, the set of key hashes MUST overlap with the
             preceding set of DNSKEY records.</t>
@@ -295,14 +295,15 @@
       </t>
 
       <t>
-        The final RRset in the authentication chain, representing the trust
-        anchor may be omitted. If omitted, the client MUST verify that the 
-	key tag and owner name in the final RRSIG record correspond to a 
-	trust anchor. There may however be reason to include the trust anchor
-	RRset and signature if clients are expected to use RFC5011 compliant
-	key rollover functions inband via the chain data. In that case, they
-	will need to periodically inspect flags (revocation and secure entry
-	point flags) on the trust anchor DNSKEY	RRset.
+        The final DNSKEY RRset in the authentication chain, containing 
+	the trust anchor may be omitted. If omitted, the client MUST 
+	verify that the key tag and owner name in the final RRSIG record 
+	correspond to a trust anchor. There may however be reason to 
+	include the trust anchor RRset and signature if clients are 
+	expected to use RFC5011 compliant key rollover functions inband 
+	via the chain data. In that case, they will need to periodically 
+	inspect flags (revocation and secure entry point flags) on the 
+	trust anchor DNSKEY RRset.
       </t>
 
       <t>
@@ -332,14 +333,14 @@
       </figure>
 
       <t>
-        Names involving CNAME and DNAMEs may involve multiple branches 
-	of the DNS tree. In this case the authentication chain structure
-	will be composed of a sequence of these multiple intersecting
-	branches. DNAME chains should omit unsigned CNAME records that 
-	may have been synthesized in the response from a DNS resolver.
-	Wildcard DANE records will need to include the wildcard name as 
-	well as a negative proof (i.e. NSEC or NSEC3 records) that no 
-	closer name exists.
+        Names that are aliased via CNAME and/or DNAME records may involve 
+	multiple branches of the DNS tree. In this case the authentication 
+	chain structure will be composed of a sequence of these multiple 
+	intersecting branches. DNAME chains should omit unsigned CNAME 
+	records that may have been synthesized in the response from a DNS 
+	resolver. Wildcard DANE records will need to include the wildcard 
+	name as well as a negative proof (i.e. NSEC or NSEC3 records) that 
+	no closer name exists.
       </t>
 
       <figure>
@@ -408,7 +409,7 @@
       <xref target="RFC6066" /> when present. If the Server Name 
       Indication extension is not present, or if the server does not 
       recognize the provided name and wishes to proceed with the handshake 
-      rather than aborting the connection, the server uses the
+      rather than to abort the connection, the server uses the
       domain name associated with the server IP address to
       which the connection has been established.
     </t>
@@ -427,8 +428,8 @@
       The components of the authentication chain are built by
       starting at the target record set and its corresponding RRSIG.
       Then traversing the DNS tree upwards towards the trust anchor
-      zone (normally the DNS root), for each zone cut, the DS and
-      DNSKEY RRsets and their signatures are added. If DNS responses
+      zone (normally the DNS root), for each zone cut, the DNSKEY and
+      DS RRsets and their signatures are added. If DNS responses
       messages contain any domain names utilizing name compression
       <xref target="RFC1035"/>, then they must be uncompressed.
     </t>
@@ -449,14 +450,14 @@
       DNS records have Time To Live (TTL) parameters, and DNSSEC
       signatures have validity periods (specifically signature expiration
       times). After the TLS server constructs the serialized authentication
-      chain, it should cache and reuse it in multiple TLS connection
-      handshakes. However, it should keep track of the TTLs and signature
-      validity periods, and requery the records and rebuild the authentication
-      chain as needed. A server implementation could carefully track
-      these parameters and requery the chain correspondingly. Alternatively, 
-      it could be configured to rebuild the chain at some predefined periodic
-      interval that does not exceed the DNS TTLs or signature validity
-      periods of the component records in the chain.
+      chain, it SHOULD cache and reuse it in multiple TLS connection
+      handshakes. However, it MUST refresh and rebuild the chain as TTLs
+      and signature validity periods dictate. A server implementation 
+      could carefully track these parameters and requery component records
+      in the chain correspondingly. Alternatively, it could be configured 
+      to rebuild the entire chain at some predefined periodic interval that 
+      does not exceed the DNS TTLs or signature validity periods of the 
+      component records in the chain.
     </t>
   </section>
 
@@ -510,7 +511,7 @@
   <section title="Mandating use of this extension" anchor="must_staple">
 
     <t>
-      A TLS server certificate can mandate the use of this extension by means 
+      A TLS server certificate MAY mandate the use of this extension by means 
       of the X.509 TLS Feature Extension described in <xref target="RFC7633" />.
       This X.509 certificate extension, when populated with the dnssec_chain
       TLS extension identifier, indicates to the client that the server must
@@ -523,21 +524,20 @@
 
   <section title="Security Considerations">
 
-    <t> The security considerations of the normatively
-      referenced RFCs (1035, 4034, 4035, 5246, 6066, 6698)
-      all pertain to this extension. Since the server is
-      delivering a chain of DNS records and signatures to
-      the client, it must take care to rebuild the chain
+    <t> 
+      The security considerations of the normatively referenced RFCs 
+      (1035, 4034, 4035, 5246, 6066, 6698, 7633, 7671) all pertain to 
+      this extension. Since the server is delivering a chain of DNS 
+      records and signatures to the client, it MUST rebuild the chain
       in accordance with TTL and signature expiration of
       the chain components as described in <xref target="sec_caching" />.
       TLS clients need roughly accurate time in order to properly
       authenticate these signatures. This could be achieved by running
-      a time synchronization protocol like NTP
-      <xref target="RFC5905" /> or SNTP
-      <xref target="RFC4330" />,
-      which are already widely used today. TLS clients must
-      support a mechanism to track and rollover the trust anchor
-      key as described in <xref target="sec_trustmaint" />.
+      a time synchronization protocol like NTP <xref target="RFC5905" /> 
+      or SNTP <xref target="RFC4330" />, which are already widely used 
+      today. TLS clients MUST support a mechanism to track and rollover 
+      the trust anchor key, or be able to avail themselves of a service 
+      that does this, as described in <xref target="sec_trustmaint" />.
     </t>
 
   </section>
@@ -567,15 +567,6 @@
     </t>
 
   </section>
-
-
-  <section title="Test Vectors">
-
-    <t>
-      [TO BE ADDED LATER. THE ORIGINAL CONTENT WAS OBSOLETE.]
-    </t>
-
-  </section> <!-- test vectors -->
 
 
 </middle>
